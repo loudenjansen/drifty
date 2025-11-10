@@ -1,12 +1,2524 @@
-<!doctype html>
-<html lang="nl">
+<!DOCTYPE html>
+<html lang="en">
+
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DRIFTY</title>
+    <meta charset="UTF-8">
+    <title>DRIFTY PROMO</title>
+    
+
   </head>
+    
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+  <!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DRIFTY — Final All-in-One</title>
+<style>
+:root{--accent:#0fa678;--bg:#f4fbff}
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0;padding:10px;background:var(--bg);color:#0b2540}
+h1{font-size:20px;margin:6px 0}h2{font-size:16px;margin:8px 0 6px}
+button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+button.small{padding:5px 8px;font-size:13px}.link{background:transparent;color:#0fa678;border:1px solid #9edfc7}
+input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;margin:6px 0}
+.card{background:#fff;border:1px solid #d9e6ef;border-radius:10px;padding:10px;margin:8px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.screen{display:none}.screen.active{display:block}
+.muted{color:#566}.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef7ff;font-size:12px}
+.msg{background:#fff;border:1px solid #e3eef7;border-radius:10px;padding:8px;margin:6px 0}
+.thumb{max-width:120px;border-radius:8px;margin-top:4px}
+#map{height:240px;border-radius:12px;border:2px solid #1e3c57;background:linear-gradient(#cfeeff,#eaf7ff);position:relative;overflow:hidden}
+.boat{position:absolute;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 3px 6px rgba(0,0,0,.15)}
+.b-ok{background:#2aa745}.b-busy{background:#e43e3e}
+footer{margin:16px 0;color:#567;font-size:12px}
+@media(min-width:960px){body{max-width:960px;margin:10px auto}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ========== LOGIN (Core 1) ========== -->
+<div id="screen-login" class="screen active">
+  <h1>DRIFTY — Login</h1>
+  <input id="login-name" placeholder="Voer je naam in (admin: drifty)"/>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- ========== HOME / MAP (Core 2/3) ========== -->
+<div id="screen-home" class="screen">
+  <div class="row" style="justify-content:space-between">
+    <h1>DRIFTY — Kaart & Boten</h1>
+    <div class="row">
+      <button class="small" onclick="openProfile()">Profiel</button>
+      <button class="small" onclick="openLeaderboard()">Leaderboard</button>
+      <button class="small" onclick="openAdmin()">Admin</button>
+      <button class="small" onclick="logout()">Uitloggen</button>
+    </div>
+  </div>
+  <div id="map" class="card"></div>
+  <h2>Boten</h2>
+  <div id="boats-list"></div>
+</div>
+
+<!-- ========== BOOT / RESERVEREN + SMARTLOCK (Core 3) ========== -->
+<div id="screen-boat" class="screen">
+  <div class="row" style="justify-content:space-between">
+    <h1 id="b-name">Boot</h1>
+    <button class="small" onclick="backHome()">Terug</button>
+  </div>
+  <p class="muted">Per uur reserveren. Status: <span id="b-status">—</span></p>
+
+  <div class="card">
+    <strong>Pre-vaardag quiz (verplicht) & Safety-checklist</strong>
+    <div class="row">
+      <button class="small" onclick="openQuiz()">Quiz</button>
+      <button class="small" onclick="openSafety()">Safety</button>
+      <span id="quiz-status" class="pill">Quiz: —</span>
+      <span id="safety-status" class="pill">Safety: —</span>
+    </div>
+  </div>
+
+  <h2>Reserveer uurslot</h2>
+  <div class="card">
+    <label>Datum</label><input id="slot-date" type="date"/>
+    <label>Startuur</label><select id="slot-hour"></select>
+    <label>Duur (uren)</label><select id="slot-dur"></select>
+
+    <div class="card">
+      <strong>Accessoires (per uur)</strong>
+      <div class="row">
+        <label><input type="checkbox" id="acc-cush"/> Kussens (+0,1 pt/u)</label>
+        <label><input type="checkbox" id="acc-spk"/> Speaker (+0,2 pt/u)</label>
+      </div>
+      <p class="muted">Basis: 1 pt/u. Totaal = (1 + accessoires) × uren. Verdeeld over deelnemers.</p>
+    </div>
+
+    <div class="row">
+      <button onclick="reserveSlot()">Reserveer (onder voorbehoud)</button>
+      <button class="small" onclick="joinExact()">Join exact slot</button>
+    </div>
+  </div>
+
+  <h2>Uursloten</h2>
+  <div id="res-list"></div>
+
+  <h2>Chat</h2>
+  <div class="card">
+    <div id="chat-list"></div>
+    <input id="chat-text" placeholder="Typ bericht..."/>
+    <input id="chat-file" type="file" accept="image/*"/>
+    <div class="row"><button class="small" onclick="sendChat()">Verstuur</button></div>
+  </div>
+
+  <h2>Incident melden</h2>
+  <div class="card">
+    <div class="row">
+      <select id="inc-type"><option>Motorstoring</option><option>Schade romp</option><option>Accu leeg</option><option>Overig</option></select>
+      <select id="inc-prio"><option value="low">Laag</option><option value="med">Middel</option><option value="high">Hoog</option></select>
+    </div>
+    <textarea id="inc-notes" placeholder="Korte beschrijving..."></textarea>
+    <button class="small" onclick="logIncident()">Melden</button>
+  </div>
+
+  <h2>Opleverdocumenten</h2>
+  <div class="card">
+    <div class="row">
+      <div><div><strong>Foto vóór</strong></div><input id="doc-before" type="file" accept="image/*"/></div>
+      <div><div><strong>Foto na</strong></div><input id="doc-after" type="file" accept="image/*"/></div>
+      <button class="small" onclick="submitDocs()">Opslaan</button>
+    </div>
+    <div id="doc-preview" class="row"></div>
+  </div>
+</div>
+
+<!-- ========== PROFIEL / PUNTEN / SHOP (Core 1) ========== -->
+<div id="screen-profile" class="screen">
+  <div class="row" style="justify-content:space-between"><h1>Profiel</h1><button class="small" onclick="backHome()">Terug</button></div>
+  <p><strong>Naam:</strong> <span id="p-name"></span></p>
+  <p><strong>Punten:</strong> <span id="p-pts"></span></p>
+
+  <h2>Koop punten</h2>
+  <div class="row card">
+    <button class="small" onclick="buyPoints(1)">+1 punt</button>
+    <button class="small" onclick="buyPoints(5)">+5 punten</button>
+    <button class="small" onclick="buyPoints(10)">+10 punten</button>
+  </div>
+
+  <h2>Productshop (punten)</h2>
+  <div class="card" id="shop"></div>
+
+  <h2>Mijn aankopen</h2>
+  <div class="card" id="purchases"></div>
+
+  <h2>Verdien punten</h2>
+  <div class="card">
+    <p class="muted">+0,5 punt bij foto van een <strong>schone boot</strong>.</p>
+    <input id="earn-photo" type="file" accept="image/*"/>
+    <button class="small" onclick="earnClean()">Upload & verdien</button>
+  </div>
+
+  <h2>Mijn reserveringen</h2>
+  <div id="my-res"></div>
+
+  <div class="card">
+    <button class="small link" onclick="resetSim()">Reset simulatie</button>
+  </div>
+</div>
+
+<!-- ========== LEADERBOARD (Core 4) ========== -->
+<div id="screen-leader" class="screen">
+  <div class="row" style="justify-content:space-between"><h1>Leaderboard</h1><button class="small" onclick="backHome()">Terug</button></div>
+  <div id="lead-list" class="card"></div>
+</div>
+
+<!-- ========== ADMIN (Core 2) ========== -->
+<div id="screen-admin" class="screen">
+  <div class="row" style="justify-content:space-between">
+    <h1>Admin</h1>
+    <button class="small" onclick="backHome()">Terug</button>
+  </div>
+  <h2>Weer-gate (alleen admin)</h2>
+  <div class="card row">
+    <select id="weather"><option value="green">Groen</option><option value="yellow">Geel</option><option value="red">Rood</option></select>
+    <button onclick="setWeather()">Opslaan</button>
+    <span class="pill" id="weather-state">Huidig: groen</span>
+  </div>
+
+  <h2>Overzicht reserveringen</h2>
+  <div id="admin-res" class="card"></div>
+
+  <div class="card">
+    <button class="small link" onclick="resetSim()">Reset simulatie</button>
+  </div>
+</div>
+
+<!-- ========== SAFETY MODAL (Core 4) ========== -->
+<div id="safety-modal" class="screen" style="position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:1000;">
+  <div style="background:#fff;margin:10% auto;max-width:560px;padding:14px;border-radius:12px">
+    <div class="row" style="justify-content:space-between"><h2>Safety checklist</h2><button class="small" onclick="closeSafety()">Sluit</button></div>
+    <p class="muted">Vink alles aan:</p>
+    <div>
+      <label><input type="checkbox" class="sft" value="vesten"/> Reddingsvesten</label><br/>
+      <label><input type="checkbox" class="sft" value="blusser"/> Brandblusser</label><br/>
+      <label><input type="checkbox" class="sft" value="lijnen"/> Landvasten</label><br/>
+      <label><input type="checkbox" class="sft" value="navigatie"/> Navigatie in orde</label><br/>
+      <label><input type="checkbox" class="sft" value="schoon"/> Boot netjes</label><br/>
+      <label><input type="checkbox" class="sft" value="geo"/> GPS nabij (sim)</label>
+    </div>
+    <div class="row" style="margin-top:8px"><button onclick="saveSafety()">Bevestigen</button></div>
+  </div>
+</div>
+
+<!-- ========== QUIZ MODAL (Core 4) ========== -->
+<div id="quiz-modal" class="screen" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:1100;">
+  <div style="background:#fff;margin:10% auto;max-width:560px;padding:14px;border-radius:12px">
+    <div class="row" style="justify-content:space-between"><h2>Pre-vaardag Quiz</h2><button class="small" onclick="closeQuiz()">Sluit</button></div>
+    <div id="quiz-body">
+      <p><strong>1.</strong> Wie draagt reddingsvest?</p>
+      <label><input type="radio" name="q1" value="a"> Alleen de captain</label><br/>
+      <label><input type="radio" name="q1" value="b"> Iedereen aan boord</label><br/>
+      <label><input type="radio" name="q1" value="c"> Niemand</label>
+      <p><strong>2.</strong> Wat doe je bij code geel/rood?</p>
+      <label><input type="radio" name="q2" value="a"> Gewoon varen</label><br/>
+      <label><input type="radio" name="q2" value="b"> Alleen bij geel</label><br/>
+      <label><input type="radio" name="q2" value="c"> Niet starten</label>
+      <p><strong>3.</strong> Bij “accu leeg”?</p>
+      <label><input type="radio" name="q3" value="a"> Springen</label><br/>
+      <label><input type="radio" name="q3" value="b"> Incident melden + noodlijn</label><br/>
+      <label><input type="radio" name="q3" value="c"> Doorrijden</label>
+    </div>
+    <div class="row"><button onclick="submitQuiz()">Afronden</button><span class="pill" id="quiz-score">—</span></div>
+  </div>
+</div>
+
+<footer>DRIFTY demo — alles lokaal in je browser (localStorage). Reset via Profiel of Admin.</footer>
+
+<script>
+/* ===================== STATE & UTILS ===================== */
+let STORE={users:[],boats:[],reservations:[],weather:{code:'green'},safety:{},docs:[],incidents:[],chats:[]};
+let currentUser=null,currentBoatId=null;
+
+const PRODUCTS=[{n:'Totebag',p:0.8},{n:'Visserhoed',p:1.0},{n:'Sleutelhanger',p:0.4},{n:'Kussen',p:1.2},{n:'Zitzak',p:2.4}];
+
+function uid(){return 'id'+Math.random().toString(36).slice(2,9)}
+function nowISO(){return new Date().toISOString()}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function save(){localStorage.setItem('drifty_all',JSON.stringify(STORE)); if(currentUser) localStorage.setItem('drifty_user',currentUser.name)}
+function load(){
+  const d=localStorage.getItem('drifty_all'); if(d) STORE=JSON.parse(d);
+  if(STORE.boats.length===0) STORE.boats=[{id:1,name:'Boot 1',x:80,y:60,status:'available'},{id:2,name:'Boot 2',x:220,y:120,status:'available'},{id:3,name:'Boot 3',x:340,y:160,status:'available'}];
+  const cu=localStorage.getItem('drifty_user'); if(cu) currentUser=STORE.users.find(u=>u.name===cu);
+}
+function isAdmin(){return currentUser?.name==='drifty'}
+function hoursBetween(s,e){return Math.max(1,Math.round((new Date(e)-new Date(s))/3600000))}
+function toISODateHour(dateStr,h){const d=new Date(dateStr); d.setHours(h,0,0,0); return d.toISOString()}
+function resetSim(){ if(confirm('Weet je zeker dat je de simulatie wilt resetten?')){ localStorage.clear(); location.reload(); } }
+
+load(); if(currentUser){show('screen-home'); renderHome()}
+
+/* ===================== AUTH (Core 1) ===================== */
+function login(){
+  const name=document.getElementById('login-name').value.trim();
+  if(!name) return alert('Voer een naam in');
+  let u=STORE.users.find(x=>x.name===name);
+  if(!u){u={id:uid(),name,points:5,purchases:[],badges:[]}; STORE.users.push(u)}
+  currentUser=u; save(); show('screen-home'); renderHome();
+}
+function logout(){currentUser=null; localStorage.removeItem('drifty_user'); show('screen-login')}
+
+/* ===================== HOME / MAP (Core 2) ===================== */
+function renderHome(){
+  const map=document.getElementById('map'); map.innerHTML='';
+  STORE.boats.forEach(b=>{
+    const el=document.createElement('div'); el.className='boat '+(b.status==='available'?'b-ok':'b-busy');
+    el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.textContent=b.name.split(' ')[1];
+    el.title=b.name; el.onclick=()=>openBoat(b.id); map.appendChild(el);
+  });
+  const list=document.getElementById('boats-list'); list.innerHTML='';
+  STORE.boats.forEach(b=>{
+    const c=document.createElement('div'); c.className='card row'; c.style.justifyContent='space-between';
+    c.innerHTML=`<div><strong>${b.name}</strong> <span class="muted">(${b.status})</span></div><button class="small" onclick="openBoat(${b.id})">Open</button>`;
+    list.appendChild(c);
+  });
+}
+function backHome(){show('screen-home'); renderHome()}
+
+/* ===================== BOAT / RESERVATION (Core 3) ===================== */
+function openBoat(id){
+  currentBoatId=id; const b=STORE.boats.find(x=>x.id===id);
+  document.getElementById('b-name').innerText=b.name;
+  document.getElementById('b-status').innerText=b.status;
+
+  const hourSel=document.getElementById('slot-hour'); hourSel.innerHTML='';
+  for(let h=6;h<=22;h++){const o=document.createElement('option');o.value=h;o.textContent=`${String(h).padStart(2,'0')}:00`;hourSel.appendChild(o)}
+  const durSel=document.getElementById('slot-dur'); durSel.innerHTML='';
+  for(let d=1;d<=8;d++){const o=document.createElement('option');o.value=d;o.textContent=`${d} uur`;durSel.appendChild(o)}
+  document.getElementById('slot-date').value=(new Date()).toISOString().slice(0,10);
+
+  updateQuizSafetyPills();
+  renderResList(); renderChatList(); renderDocPreview();
+  show('screen-boat');
+}
+function calcCost(res){
+  const hrs=hoursBetween(res.start,res.end);
+  let perHour=1; if(res.acc?.cush) perHour+=0.1; if(res.acc?.spk) perHour+=0.2;
+  res.total=+(perHour*hrs).toFixed(3);
+}
+function timesOverlap(aStart,aEnd,bStart,bEnd){return !(new Date(aEnd)<=new Date(bStart) || new Date(aStart)>=new Date(bEnd))}
+function reserveSlot(){
+  const date=document.getElementById('slot-date').value;
+  const hour=+document.getElementById('slot-hour').value;
+  const dur=+document.getElementById('slot-dur').value;
+  if(!date) return alert('Kies een datum');
+  const start=toISODateHour(date,hour), end=toISODateHour(date,hour+dur);
+  const clash=STORE.reservations.some(r=> r.boatId===currentBoatId && timesOverlap(start,end,r.start,r.end));
+  if(clash) return alert('Overlappende reservering op deze boot');
+  let r=STORE.reservations.find(x=>x.boatId===currentBoatId && x.start===start && x.end===end);
+  if(!r){r={id:uid(),boatId:currentBoatId,start,end,users:[],status:'pending',acc:{cush:document.getElementById('acc-cush').checked,spk:document.getElementById('acc-spk').checked}}; calcCost(r); STORE.reservations.push(r)}
+  if(!r.users.includes(currentUser.name)) r.users.push(currentUser.name);
+  save(); renderResList(); alert('Onder voorbehoud. Betalen pas bij activeren.');
+}
+function joinExact(){
+  const date=document.getElementById('slot-date').value;
+  const hour=+document.getElementById('slot-hour').value;
+  const dur=+document.getElementById('slot-dur').value;
+  const start=toISODateHour(date,hour), end=toISODateHour(date,hour+dur);
+  let r=STORE.reservations.find(x=>x.boatId===currentBoatId && x.start===start && x.end===end);
+  if(!r) return alert('Geen exact slot gevonden');
+  if(!r.users.includes(currentUser.name)) r.users.push(currentUser.name);
+  save(); renderResList(); alert('Je doet mee met dit slot');
+}
+function quickJoin(id){const r=STORE.reservations.find(x=>x.id===id); if(!r)return; if(!r.users.includes(currentUser.name)) r.users.push(currentUser.name); save(); renderResList()}
+function activate(id){
+  const r=STORE.reservations.find(x=>x.id===id); if(!r) return;
+  const now=new Date();
+  if(!(now>=new Date(r.start) && now<=new Date(r.end))) return alert('Niet binnen het tijdslot');
+  if(r.status==='active') return alert('Slot is al geactiveerd');
+  if(!isAdmin() && STORE.weather.code!=='green') return alert('Weer-gate: niet toegestaan bij '+STORE.weather.code.toUpperCase());
+  // Quiz + Safety
+  const quizOK=(+localStorage.getItem('quiz_'+currentUser.name)||0)>=67;
+  const safetyOK=!!STORE.safety[`${r.id}_${currentUser.name}`];
+  if(!quizOK) return alert('Quiz onvoldoende (min 67%)');
+  if(!safetyOK) return alert('Safety-checklist niet voltooid');
+  // Smartlock
+  if(!r.code) r.code=(''+Math.floor(1000+Math.random()*9000));
+  const inp=prompt(`Smartlock code (alleen zichtbaar tijdens het slot):\n\nCode: ${r.code}\n\nVoer de code in om te openen`);
+  if(inp!==r.code) return alert('Verkeerde code');
+  // Betalen bij activeren
+  calcCost(r); const share=(r.total/Math.max(1,r.users.length));
+  const lacking=r.users.filter(n=>{const u=STORE.users.find(x=>x.name===n); return (u?.points||0) < share-1e-9;});
+  if(lacking.length){return alert('Onvoldoende punten bij: '+lacking.join(', '));}
+  r.users.forEach(n=>{const u=STORE.users.find(x=>x.name===n); u.points=+(u.points-share).toFixed(2);});
+  r.status='active'; const boat=STORE.boats.find(b=>b.id===r.boatId); boat.status='in use';
+  save(); renderResList(); renderHome(); renderMyReservations(); alert('Smartlock open — veel vaarplezier!');
+}
+function renderResList(){
+  const box=document.getElementById('res-list'); box.innerHTML='';
+  const list=STORE.reservations.filter(r=>r.boatId===currentBoatId).sort((a,b)=>new Date(a.start)-new Date(b.start));
+  if(list.length===0){ box.innerHTML='<div class="muted">Nog geen reserveringen</div>'; return; }
+  const now=new Date();
+  list.forEach(r=>{
+    const canActivate = r.status==='pending' && now>=new Date(r.start) && now<=new Date(r.end) && r.users.includes(currentUser?.name);
+    const emoji = r.status==='pending'?'🕒': (r.status==='active'?'🔓': (r.status==='done'?'✅':'🕘'));
+    const perPerson = (r.total/Math.max(1,r.users.length));
+    const row=document.createElement('div'); row.className='card';
+    row.innerHTML=`
+      <div><strong>${new Date(r.start).toLocaleString()}</strong> → ${new Date(r.end).toLocaleString()} ${emoji}</div>
+      <div class="muted">Deelnemers: ${r.users.join(', ')||'—'}</div>
+      <div class="muted">Kosten: ${r.total.toFixed(3)} pt (~${perPerson.toFixed(3)} p.p.) • Accessoires: ${(r.acc.cush?'Kussens ':'')+(r.acc.spk?'Speaker ':'')||'—'}</div>
+      <div class="row">
+        <button class="small" onclick="quickJoin('${r.id}')">Doe mee</button>
+        ${canActivate?`<button class="small" onclick="activate('${r.id}')">Smartlock openen</button>`:''}
+      </div>
+    `;
+    box.appendChild(row);
+  });
+}
+setInterval(()=>{ // active → done
+  const now=new Date();
+  STORE.reservations.forEach(r=>{
+    if(r.status==='active' && now>new Date(r.end)){ r.status='done'; const b=STORE.boats.find(x=>x.id===r.boatId); const any=STORE.reservations.some(z=>z.boatId===r.boatId && z.status==='active'); if(!any){b.status='available'} }
+  }); save();
+}, 8000);
+
+/* ===================== QUIZ & SAFETY (Core 4) ===================== */
+function openQuiz(){document.getElementById('quiz-modal').style.display='block'}
+function closeQuiz(){document.getElementById('quiz-modal').style.display='none'}
+function submitQuiz(){
+  const q1=document.querySelector('input[name="q1"]:checked')?.value,
+        q2=document.querySelector('input[name="q2"]:checked')?.value,
+        q3=document.querySelector('input[name="q3"]:checked')?.value;
+  let s=0; if(q1==='b') s++; if(q2==='c') s++; if(q3==='b') s++;
+  const pct=Math.round(s/3*100); localStorage.setItem('quiz_'+currentUser.name,pct);
+  document.getElementById('quiz-score').innerText=pct+'%'; updateQuizSafetyPills(); closeQuiz();
+}
+function openSafety(){document.getElementById('safety-modal').style.display='block'}
+function closeSafety(){document.getElementById('safety-modal').style.display='none'}
+function saveSafety(){
+  const all=Array.from(document.querySelectorAll('.sft')).every(el=>el.checked);
+  if(!all) return alert('Vink alle items aan');
+  const mine=STORE.reservations.filter(r=>r.users.includes(currentUser.name) && r.status==='pending').sort((a,b)=>new Date(a.start)-new Date(b.start));
+  if(!mine.length) { closeSafety(); return alert('Geen pending reservering gevonden'); }
+  const r=mine[0]; STORE.safety[`${r.id}_${currentUser.name}`]=true; save(); updateQuizSafetyPills(); closeSafety(); alert('Safety opgeslagen');
+}
+function updateQuizSafetyPills(){
+  const score=+localStorage.getItem('quiz_'+(currentUser?.name||''))||0;
+  document.getElementById('quiz-status').innerText='Quiz: '+(score?score+'%':'—');
+  const anyForUser = Object.keys(STORE.safety).find(k=>k.endsWith('_'+(currentUser?.name||'')));
+  document.getElementById('safety-status').innerText='Safety: '+(anyForUser?'OK':'—');
+}
+
+/* ===================== CHAT (Core 4) ===================== */
+function renderChatList(){
+  const box=document.getElementById('chat-list'); box.innerHTML='';
+  const resIds=STORE.reservations.filter(r=>r.boatId===currentBoatId).map(r=>r.id);
+  const msgs=STORE.chats.filter(m=>resIds.includes(m.resId)).sort((a,b)=>new Date(a.time)-new Date(b.time));
+  if(!msgs.length){box.innerHTML='<div class="muted">Nog geen berichten</div>'; return;}
+  msgs.forEach(m=>{
+    const el=document.createElement('div'); el.className='msg';
+    el.innerHTML=`<div class="muted"><strong>${m.user}</strong> — ${new Date(m.time).toLocaleString()}</div>${m.text?`<div>${m.text}</div>`:''}${m.img?`<img class="thumb" src="${m.img}"/>`:''}`;
+    box.appendChild(el);
+  });
+}
+function sendChat(){
+  const r = STORE.reservations.find(x=>x.boatId===currentBoatId && x.users.includes(currentUser.name));
+  if(!r) return alert('Je moet deelnemer zijn van een slot op deze boot');
+  const text=document.getElementById('chat-text').value.trim();
+  const f=document.getElementById('chat-file').files[0];
+  if(!text && !f) return;
+  const push=(img)=>{STORE.chats.push({id:uid(),resId:r.id,user:currentUser.name,text, img, time:nowISO()}); save(); document.getElementById('chat-text').value=''; document.getElementById('chat-file').value=''; renderChatList();}
+  if(f){const rd=new FileReader(); rd.onload=e=>push(e.target.result); rd.readAsDataURL(f)} else push(null);
+}
+
+/* ===================== DOCS & INCIDENTS (Core 4) ===================== */
+function submitDocs(){
+  const before=document.getElementById('doc-before').files[0], after=document.getElementById('doc-after').files[0];
+  if(!before||!after) return alert('Beide foto’s uploaden');
+  const r=STORE.reservations.find(x=>x.boatId===currentBoatId && x.users.includes(currentUser.name));
+  if(!r) return alert('Je moet deelnemer zijn');
+  const rd1=new FileReader(), rd2=new FileReader(); let a=null,b=null;
+  const store=()=>{if(a&&b){STORE.docs.push({id:uid(),resId:r.id,boatId:r.boatId,user:currentUser.name,before:a,after:b,time:nowISO()}); save(); renderDocPreview(); alert('Oplevering opgeslagen')}}
+  rd1.onload=e=>{a=e.target.result; store()}; rd2.onload=e=>{b=e.target.result; store()}
+  rd1.readAsDataURL(before); rd2.readAsDataURL(after);
+}
+function renderDocPreview(){
+  const box=document.getElementById('doc-preview'); if(!box) return; box.innerHTML='';
+  const list=STORE.docs.filter(d=>d.boatId===currentBoatId).slice(-4);
+  list.forEach(d=>{const wrap=document.createElement('div'); wrap.className='row'; wrap.innerHTML=`<div class="muted">${new Date(d.time).toLocaleString()} • ${d.user}</div><img class="thumb" src="${d.before}"/><img class="thumb" src="${d.after}"/>`; box.appendChild(wrap) });
+}
+function logIncident(){
+  const type=document.getElementById('inc-type').value, pr=document.getElementById('inc-prio').value, notes=document.getElementById('inc-notes').value.trim();
+  if(!notes) return alert('Beschrijf kort het incident');
+  const r=STORE.reservations.find(x=>x.boatId===currentBoatId && x.users.includes(currentUser.name));
+  STORE.incidents.push({id:uid(),boatId:currentBoatId,resId:r?.id||null,user:currentUser.name,type,prio:pr,notes,time:nowISO()});
+  save(); alert('Incident geregistreerd');
+}
+
+/* ===================== PROFILE / SHOP / EARN (Core 1/4) ===================== */
+function openProfile(){
+  document.getElementById('p-name').innerText=currentUser.name;
+  document.getElementById('p-pts').innerText=(currentUser.points??0).toFixed(2);
+  renderShop(); renderPurchases(); renderMyReservations();
+  show('screen-profile');
+}
+function buyPoints(n){currentUser.points=(currentUser.points||0)+n; save(); openProfile()}
+function renderShop(){
+  const box=document.getElementById('shop'); box.innerHTML='';
+  PRODUCTS.forEach(p=>{
+    const row=document.createElement('div'); row.className='row'; row.style.justifyContent='space-between';
+    row.innerHTML=`<div>${p.n} — <strong>${p.p}</strong> pt</div><button class="small" onclick="buyProduct('${p.n}',${p.p})">Koop</button>`;
+    box.appendChild(row);
+  });
+}
+function buyProduct(n,pt){
+  if((currentUser.points||0) < pt) return alert('Onvoldoende punten');
+  currentUser.purchases=currentUser.purchases||[];
+  currentUser.points=+(currentUser.points-pt).toFixed(2);
+  currentUser.purchases.push({name:n,price:pt,time:nowISO()}); save(); openProfile(); alert(`${n} gekocht voor ${pt} pt`);
+}
+function renderPurchases(){
+  const box=document.getElementById('purchases'); box.innerHTML='';
+  const list=currentUser.purchases||[]; if(!list.length){box.innerHTML='<div class="muted">Nog geen aankopen</div>'; return;}
+  list.slice().reverse().forEach(p=>{
+    const d=document.createElement('div'); d.className='row'; d.style.justifyContent='space-between';
+    d.innerHTML=`<div>${p.name}</div><div class="muted">${p.price} pt • ${new Date(p.time).toLocaleDateString()}</div>`;
+    box.appendChild(d);
+  });
+}
+function renderMyReservations(){
+  const box=document.getElementById('my-res'); if(!box) return; box.innerHTML='';
+  const mine=STORE.reservations.filter(r=>r.users.includes(currentUser.name)).sort((a,b)=>new Date(a.start)-new Date(b.start));
+  if(!mine.length){box.innerHTML='<div class="muted">Geen reserveringen</div>'; return;}
+  mine.forEach(r=>{
+    const b=STORE.boats.find(x=>x.id===r.boatId);
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML=`<div><strong>${b?.name||'Boot'}</strong> — ${r.status}</div><div class="muted">${new Date(r.start).toLocaleString()} → ${new Date(r.end).toLocaleString()}</div><div class="muted">Deelnemers: ${r.users.join(', ')}</div>`;
+    box.appendChild(el);
+  });
+}
+function earnClean(){
+  const f=document.getElementById('earn-photo').files[0];
+  if(!f) return alert('Upload eerst een foto');
+  const rd=new FileReader();
+  rd.onload=()=>{
+    currentUser.points=+(currentUser.points+0.5).toFixed(2);
+    currentUser.badges=currentUser.badges||[];
+    if(!currentUser.badges.includes('Starter')) currentUser.badges.push('Starter');
+    save(); openProfile(); alert('+0,5 punt toegekend (schone boot) — badge mogelijk verdiend');
+  };
+  rd.readAsDataURL(f);
+}
+
+/* ===================== LEADERBOARD (Core 4) ===================== */
+function openLeaderboard(){
+  const box=document.getElementById('lead-list'); box.innerHTML='';
+  const sorted=[...STORE.users].sort((a,b)=>(b.points||0)-(a.points||0));
+  sorted.forEach((u,i)=>{const d=document.createElement('div'); d.className='row'; d.style.justifyContent='space-between'; d.innerHTML=`<div>${i+1}. ${u.name}</div><div class="muted">${(u.points||0).toFixed(2)} pt</div>`; box.appendChild(d)});
+  show('screen-leader');
+}
+
+/* ===================== ADMIN (Core 2) ===================== */
+function openAdmin(){
+  if(!isAdmin()) return alert('Alleen admin (drifty)');
+  document.getElementById('weather-state').innerText='Huidig: '+STORE.weather.code;
+  renderAdminRes();
+  show('screen-admin');
+}
+function setWeather(){const c=document.getElementById('weather').value; STORE.weather.code=c; save(); document.getElementById('weather-state').innerText='Huidig: '+c; alert('Weer-code ingesteld: '+c)}
+function renderAdminRes(){
+  const box=document.getElementById('admin-res'); box.innerHTML='';
+  const list=STORE.reservations.slice().sort((a,b)=>new Date(a.start)-new Date(b.start));
+  if(!list.length){box.innerHTML='<div class="muted">Nog geen reserveringen</div>'; return;}
+  list.forEach(r=>{
+    const b=STORE.boats.find(x=>x.id===r.boatId);
+    const d=document.createElement('div'); d.className='row'; d.style.justifyContent='space-between';
+    d.innerHTML=`<div>${b?.name||'Boot'} — ${new Date(r.start).toLocaleString()} → ${new Date(r.end).toLocaleString()}</div><div class="muted">${r.status} • [${r.users.join(', ')}]</div>`;
+    box.appendChild(d);
+  });
+}
+</script>
+
+<!-- ====================== MODULE 1: Admin + Webshop uitbreidingen ====================== -->
+<script>
+/* ========== ADMIN PUNTEN BEÏNVLOEDEN ========== */
+function openAdmin(){
+  if(!isAdmin()) return alert('Alleen admin (drifty)');
+  document.getElementById('weather-state').innerText='Huidig: '+STORE.weather.code;
+  renderAdminRes();
+  renderAdminUsers(); // 🔹 nieuw: toon gebruikerslijst
+  show('screen-admin');
+}
+
+function renderAdminUsers(){
+  let box=document.getElementById('admin-users');
+  if(!box){
+    box=document.createElement('div');
+    box.id='admin-users';
+    document.getElementById('screen-admin').appendChild(box);
+  }
+  box.innerHTML='<h2>Gebruikers & Puntenbeheer</h2>';
+  STORE.users.forEach(u=>{
+    const row=document.createElement('div'); row.className='card row'; row.style.justifyContent='space-between';
+    row.innerHTML=`<div><strong>${u.name}</strong> — ${u.points.toFixed(2)} pt</div>
+      <div class="row">
+        <button class="small" onclick="adjustPoints('${u.name}',0.5)">+0.5</button>
+        <button class="small" onclick="adjustPoints('${u.name}',-0.5)">-0.5</button>
+        <button class="small" onclick="adjustPoints('${u.name}',1)">+1</button>
+        <button class="small" onclick="adjustPoints('${u.name}',-1)">-1</button>
+      </div>`;
+    box.appendChild(row);
+  });
+}
+
+function adjustPoints(name,delta){
+  const u=STORE.users.find(x=>x.name===name);
+  if(!u) return;
+  u.points=Math.max(0,+(u.points+delta).toFixed(2));
+  save(); renderAdminUsers(); alert(`${name}: ${delta>0?'+':''}${delta} pt`);
+}
+
+/* ========== AUTO-PENALTY TE LAAT ========== */
+setInterval(()=>{
+  const now=new Date();
+  STORE.reservations.forEach(r=>{
+    if(r.status==='done' && r.end && now - new Date(r.end) > 900000){ // elk kwartier te laat
+      const overQ = Math.floor((now - new Date(r.end))/900000);
+      const penalty = 0.25*overQ;
+      if(!r.penaltyApplied || r.penaltyApplied<overQ){
+        r.users.forEach(n=>{
+          const u=STORE.users.find(x=>x.name===n);
+          if(u){u.points=Math.max(0,+(u.points-0.25).toFixed(2));}
+        });
+        r.penaltyApplied=overQ;
+        save();
+      }
+    }
+  });
+}, 60000); // check elke minuut
+
+/* ========== KNOP NAAR WEBSHOP OP HOME ========== */
+function renderHome(){
+  const map=document.getElementById('map'); map.innerHTML='';
+  STORE.boats.forEach(b=>{
+    const el=document.createElement('div'); el.className='boat '+(b.status==='available'?'b-ok':'b-busy');
+    el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.textContent=b.name.split(' ')[1];
+    el.title=b.name; el.onclick=()=>openBoat(b.id); map.appendChild(el);
+  });
+ // Verplaats webshopknop naar top-menu (tussen leaderboard en admin)
+const topBar = document.querySelector('#screen-home .row:nth-child(1) > .row');
+if(topBar && !document.getElementById('btn-shop')){
+  const btn = document.createElement('button');
+  btn.id = 'btn-shop';
+  btn.className = 'small';
+  btn.textContent = '🛍️ Webshop';
+  btn.onclick = ()=>openProfile();
+  topBar.insertBefore(btn, topBar.children[2]); // tussen Leaderboard en Admin
+}
+
+  
+  STORE.boats.forEach(b=>{
+    const c=document.createElement('div'); c.className='card row'; c.style.justifyContent='space-between';
+    c.innerHTML=`<div><strong>${b.name}</strong> <span class="muted">(${b.status})</span></div><button class="small" onclick="openBoat(${b.id})">Open</button>`;
+    list.appendChild(c);
+  });
+}
+</script>
+<!-- ====================== EINDE MODULE 1 ====================== -->
+
+<!-- ====================== MODULE 2: Bonus bij op tijd opleveren ====================== -->
+<script>
+/* 
+   Controleert elke minuut of er net afgeronde reserveringen zijn (status 'done').
+   Als ze op tijd klaar zijn → +0,1 punt per deelnemer (eenmalig).
+*/
+setInterval(()=>{
+  const now=new Date();
+  STORE.reservations.forEach(r=>{
+    if(r.status==='done' && !r.bonusGiven){
+      const end=new Date(r.end);
+      const diffMin=(now-end)/60000;
+      if(diffMin>=0 && diffMin<5){ // afgerond en niet te laat (binnen 5 min)
+        r.users.forEach(n=>{
+          const u=STORE.users.find(x=>x.name===n);
+          if(u){u.points=+(u.points+0.1).toFixed(2);}
+        });
+        r.bonusGiven=true;
+        save();
+        console.log(`✅ Bonus +0.1 toegekend aan ${r.users.join(', ')}`);
+      }
+    }
+  });
+},60000);
+</script>
+<!-- ====================== EINDE MODULE 2 ====================== -->
+
+  <!-- ====================== MODULE 3: Educatieve Rondvaarten ====================== -->
+<script>
+/* 
+🎓 MODULE 3 — EDUCATIEVE RONDVAARTEN
+-------------------------------------
+- Knop toegevoegd in de topbalk (home) voor “Educatieve Rondvaarten”.
+- Maximaal 10 personen per vaart.
+- Duur: 2 uur, kosten: 0,5 punt per persoon.
+- Gebruikers kunnen zich inschrijven of uitschrijven.
+- Admin ziet overzicht in Admin-pagina.
+*/
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Voeg knop toe in de topbalk
+  const topBar = document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if (topBar && !document.getElementById("btn-tours")) {
+    const btn = document.createElement("button");
+    btn.id = "btn-tours";
+    btn.className = "small";
+    btn.textContent = "🎓 Educatieve Rondvaarten";
+    btn.onclick = () => openTours();
+    topBar.insertBefore(btn, topBar.children[2]); // vóór Admin
+  }
+});
+
+/* ========== DATA STRUCTUUR ========== */
+if (!STORE.tours) STORE.tours = [];
+
+/* ========== SCREEN ========== */
+function openTours() {
+  let scr = document.getElementById("screen-tours");
+  if (!scr) {
+    scr = document.createElement("div");
+    scr.id = "screen-tours";
+    scr.className = "screen active";
+    scr.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <h1>🎓 Educatieve Rondvaarten</h1>
+        <button class="small" onclick="backHome()">Terug</button>
+      </div>
+      <div id="tour-list"></div>
+      <div class="card">
+        <h2>Nieuwe Rondvaart Aanmaken (Admin)</h2>
+        <label>Titel</label><input id="tour-title" placeholder="Bijv. Natuur & Historie"/>
+        <label>Datum</label><input id="tour-date" type="date"/>
+        <label>Tijd</label><input id="tour-time" type="time"/>
+        <button onclick="createTour()">Aanmaken</button>
+      </div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-tours");
+  renderTours();
+}
+
+/* ========== RENDERING ========== */
+function renderTours() {
+  const box = document.getElementById("tour-list");
+  box.innerHTML = "";
+  if (!STORE.tours.length) {
+    box.innerHTML = '<div class="muted">Nog geen rondvaarten gepland.</div>';
+    return;
+  }
+
+  STORE.tours.forEach(t => {
+    const isIn = t.participants?.includes(currentUser.name);
+    const full = (t.participants?.length || 0) >= 10;
+    const row = document.createElement("div");
+    row.className = "card";
+    row.innerHTML = `
+      <strong>${t.title}</strong><br/>
+      ${new Date(t.datetime).toLocaleString()}<br/>
+      <span class="muted">Deelnemers: ${(t.participants || []).join(", ") || "—"}</span><br/>
+      <div class="row" style="margin-top:6px">
+        ${!isIn && !full ? `<button class="small" onclick="joinTour('${t.id}')">Join (+0.5 pt)</button>` : ""}
+        ${isIn ? `<button class="small link" onclick="leaveTour('${t.id}')">Uitschrijven</button>` : ""}
+        ${isAdmin() ? `<button class="small" onclick="deleteTour('${t.id}')">Verwijderen</button>` : ""}
+      </div>
+    `;
+    box.appendChild(row);
+  });
+}
+
+/* ========== FUNCTIES ========== */
+function createTour() {
+  if (!isAdmin()) return alert("Alleen admin kan rondvaarten aanmaken.");
+  const title = document.getElementById("tour-title").value.trim();
+  const date = document.getElementById("tour-date").value;
+  const time = document.getElementById("tour-time").value;
+  if (!title || !date || !time) return alert("Vul alles in.");
+  const datetime = new Date(`${date}T${time}`);
+  const t = { id: uid(), title, datetime, participants: [] };
+  STORE.tours.push(t);
+  save();
+  renderTours();
+  alert("Rondvaart aangemaakt!");
+}
+
+function joinTour(id) {
+  const t = STORE.tours.find(x => x.id === id);
+  if (!t) return;
+  if ((t.participants || []).length >= 10) return alert("Vol!");
+  if (!t.participants.includes(currentUser.name)) {
+    if ((currentUser.points || 0) < 0.5) return alert("Onvoldoende punten!");
+    currentUser.points = +(currentUser.points - 0.5).toFixed(2);
+    t.participants.push(currentUser.name);
+    save();
+    renderTours();
+    alert("Ingeschreven! (0.5 pt afgeschreven)");
+  }
+}
+
+function leaveTour(id) {
+  const t = STORE.tours.find(x => x.id === id);
+  if (!t) return;
+  t.participants = t.participants.filter(n => n !== currentUser.name);
+  currentUser.points = +(currentUser.points + 0.5).toFixed(2);
+  save();
+  renderTours();
+  alert("Uitschreven (+0.5 pt terug)");
+}
+
+function deleteTour(id) {
+  STORE.tours = STORE.tours.filter(t => t.id !== id);
+  save();
+  renderTours();
+}
+</script>
+<!-- ====================== EINDE MODULE 3 ====================== -->
+
+  <!-- ====================== MODULE 4: Captains Huren ====================== -->
+<script>
+/* 
+🧭 MODULE 4 — CAPTAINS HUREN
+-------------------------------------
+- Knop toegevoegd in de topbalk (home) voor “Captains”.
+- Standaardtarief: 2 punten per uur.
+- Admin kan captains toevoegen (naam + beschikbaarheid).
+- Gebruikers kunnen:
+  - Een captain boeken voor een gekozen tijd en duur.
+  - Tijdens het varen optioneel een "bod" doen (on demand).
+*/
+
+if(!STORE.captains) STORE.captains = [];
+if(!STORE.captainBookings) STORE.captainBookings = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  const topBar = document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if (topBar && !document.getElementById("btn-captains")) {
+    const btn = document.createElement("button");
+    btn.id = "btn-captains";
+    btn.className = "small";
+    btn.textContent = "🧭 Captains";
+    btn.onclick = () => openCaptains();
+    topBar.insertBefore(btn, topBar.children[2]); // vóór Admin
+  }
+});
+
+/* ========== SCREEN ========== */
+function openCaptains(){
+  let scr = document.getElementById("screen-captains");
+  if(!scr){
+    scr = document.createElement("div");
+    scr.id = "screen-captains";
+    scr.className = "screen active";
+    scr.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <h1>🧭 Captains</h1>
+        <button class="small" onclick="backHome()">Terug</button>
+      </div>
+
+      <div id="captains-list"></div>
+      <div class="card">
+        <h2>Boek een Captain</h2>
+        <label>Captain</label>
+        <select id="captain-select"></select>
+        <label>Datum</label><input id="captain-date" type="date"/>
+        <label>Starttijd</label><input id="captain-time" type="time"/>
+        <label>Duur (uren)</label><select id="captain-dur"></select>
+        <button onclick="bookCaptain()">Boek (2 pt/uur)</button>
+      </div>
+
+      <div class="card">
+        <h2>On-demand bod doen (tijdens vaart)</h2>
+        <label>Captainnaam</label><input id="bid-name" placeholder="Naam captain"/>
+        <label>Bod (punten per uur)</label><input id="bid-amount" type="number" step="0.1" min="0.1" value="2"/>
+        <button onclick="placeBid()">Bod doen</button>
+      </div>
+
+      <div class="card" id="captain-admin"></div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-captains");
+  renderCaptains();
+  renderBookings();
+  renderCaptainAdmin();
+}
+
+/* ========== ADMIN: CAPTAINS BEHEREN ========== */
+function renderCaptainAdmin(){
+  const box = document.getElementById("captain-admin");
+  if(!isAdmin()){ box.style.display="none"; return; }
+  box.style.display="block";
+  box.innerHTML = `
+    <h2>Captain toevoegen (Admin)</h2>
+    <label>Naam</label><input id="captain-name" placeholder="Bijv. Jan de Schipper"/>
+    <label>Beschikbare dagen (komma gescheiden)</label><input id="captain-days" placeholder="ma,di,wo"/>
+    <button onclick="addCaptain()">Toevoegen</button>
+  `;
+}
+
+function addCaptain(){
+  if(!isAdmin()) return alert("Alleen admin");
+  const name = document.getElementById("captain-name").value.trim();
+  const days = document.getElementById("captain-days").value.trim().split(",").map(x=>x.trim());
+  if(!name) return alert("Voer een naam in");
+  STORE.captains.push({id:uid(), name, days});
+  save(); renderCaptains(); renderCaptainAdmin();
+  alert("Captain toegevoegd!");
+}
+
+/* ========== RENDERING ========== */
+function renderCaptains(){
+  const list = document.getElementById("captains-list");
+  const sel = document.getElementById("captain-select");
+  list.innerHTML = "";
+  sel.innerHTML = "";
+  if(!STORE.captains.length){ 
+    list.innerHTML = '<div class="muted">Nog geen captains beschikbaar.</div>'; 
+    return; 
+  }
+  STORE.captains.forEach(c=>{
+    const row=document.createElement("div");
+    row.className="card";
+    row.innerHTML=`
+      <strong>${c.name}</strong><br/>
+      <span class="muted">Beschikbaar: ${(c.days||[]).join(", ")||"n.v.t."}</span>
+    `;
+    list.appendChild(row);
+
+    const opt=document.createElement("option");
+    opt.value=c.id; opt.textContent=c.name;
+    sel.appendChild(opt);
+  });
+  const durSel=document.getElementById("captain-dur"); durSel.innerHTML="";
+  for(let i=1;i<=8;i++){const o=document.createElement("option"); o.value=i; o.textContent=`${i} uur`; durSel.appendChild(o);}
+}
+
+/* ========== BOOKINGS ========== */
+function bookCaptain(){
+  const capId=document.getElementById("captain-select").value;
+  const cap=STORE.captains.find(c=>c.id===capId);
+  if(!cap) return alert("Kies een captain");
+  const date=document.getElementById("captain-date").value;
+  const time=document.getElementById("captain-time").value;
+  const dur=+document.getElementById("captain-dur").value;
+  if(!date||!time) return alert("Vul datum en tijd in");
+  const cost=2*dur;
+  if((currentUser.points||0)<cost) return alert("Onvoldoende punten");
+  currentUser.points=+(currentUser.points-cost).toFixed(2);
+  STORE.captainBookings.push({
+    id:uid(),
+    captain:cap.name,
+    user:currentUser.name,
+    start:`${date}T${time}`,
+    duration:dur,
+    cost
+  });
+  save();
+  renderBookings();
+  alert(`Captain ${cap.name} geboekt voor ${dur} uur (${cost} pt afgeschreven).`);
+}
+
+function renderBookings(){
+  const box=document.createElement("div");
+  box.className="card";
+  box.innerHTML="<h2>Mijn Captain-boekingen</h2>";
+  const my=STORE.captainBookings.filter(b=>b.user===currentUser.name);
+  if(!my.length){box.innerHTML+='<div class="muted">Nog geen boekingen.</div>';}
+  my.forEach(b=>{
+    const el=document.createElement("div");
+    el.className="row";
+    el.style.justifyContent="space-between";
+    el.innerHTML=`<div>${b.captain} — ${new Date(b.start).toLocaleString()} (${b.duration}u)</div>
+                  <div class="muted">${b.cost} pt</div>`;
+    box.appendChild(el);
+  });
+  const existing=document.querySelector("#screen-captains .card#bookings");
+  if(existing) existing.remove();
+  box.id="bookings";
+  document.getElementById("screen-captains").appendChild(box);
+}
+
+/* ========== BOD FUNCTIE ========== */
+function placeBid(){
+  const name=document.getElementById("bid-name").value.trim();
+  const amount=parseFloat(document.getElementById("bid-amount").value);
+  if(!name || isNaN(amount) || amount<=0) return alert("Vul naam en bod in");
+  alert(`Bod geplaatst bij ${name}: ${amount} pt/uur (niet-bindend in simulatie).`);
+}
+</script>
+<!-- ====================== EINDE MODULE 4 ====================== -->
+
+  <!-- ====================== MODULE 5: Weekoverzicht / Kalender ====================== -->
+<script>
+/*
+🗓️ MODULE 5 — WEEKOVERZICHT
+-------------------------------------
+Toont in één overzicht:
+- Bootreserveringen
+- Educatieve rondvaarten
+- Captainboekingen
+voor de komende 7 dagen.
+
+Alle gebruikers zien hun eigen agenda.
+Admin ziet ALLES.
+*/
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  const topBar=document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if(topBar && !document.getElementById("btn-calendar")){
+    const btn=document.createElement("button");
+    btn.id="btn-calendar";
+    btn.className="small";
+    btn.textContent="🗓️ Kalender";
+    btn.onclick=()=>openCalendar();
+    topBar.insertBefore(btn, topBar.children[2]);
+  }
+});
+
+function openCalendar(){
+  let scr=document.getElementById("screen-calendar");
+  if(!scr){
+    scr=document.createElement("div");
+    scr.id="screen-calendar";
+    scr.className="screen active";
+    scr.innerHTML=`
+      <div class="row" style="justify-content:space-between">
+        <h1>🗓️ Mijn Weekoverzicht</h1>
+        <button class="small" onclick="backHome()">Terug</button>
+      </div>
+      <div class="card" id="calendar-content"></div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-calendar");
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const box=document.getElementById("calendar-content");
+  const now=new Date();
+  const weekDays=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(now); d.setDate(now.getDate()+i);
+    weekDays.push(d);
+  }
+
+  let html="";
+  weekDays.forEach(day=>{
+    const dateStr=day.toISOString().split("T")[0];
+    const dateLabel=day.toLocaleDateString("nl-NL",{weekday:"long",day:"2-digit",month:"short"});
+    let entries=[];
+
+    // Bootreserveringen
+    STORE.reservations.forEach(r=>{
+      const start=new Date(r.start);
+      if(start.toISOString().startsWith(dateStr)){
+        if(isAdmin()||r.users.includes(currentUser.name))
+          entries.push({type:"Boot",title:STORE.boats.find(b=>b.id===r.boatId)?.name||"Boot",time:start.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),info:`${r.status} (${r.users.length}p)`});
+      }
+    });
+
+    // Rondvaarten
+    (STORE.tours||[]).forEach(t=>{
+      const d=new Date(t.datetime);
+      if(d.toISOString().startsWith(dateStr)){
+        if(isAdmin()||t.participants.includes(currentUser.name))
+          entries.push({type:"Rondvaart",title:t.title,time:d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),info:`${(t.participants||[]).length}/10 deelnemers`});
+      }
+    });
+
+    // Captain-boekingen
+    (STORE.captainBookings||[]).forEach(b=>{
+      const d=new Date(b.start);
+      if(d.toISOString().startsWith(dateStr)){
+        if(isAdmin()||b.user===currentUser.name)
+          entries.push({type:"Captain",title:b.captain,time:d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),info:`${b.duration}u (${b.cost}pt)`});
+      }
+    });
+
+    html+=`<div class="card"><strong>${dateLabel}</strong><br/>`;
+    if(entries.length===0){
+      html+=`<div class="muted">Geen afspraken</div>`;
+    } else {
+      entries.sort((a,b)=>a.time.localeCompare(b.time));
+      entries.forEach(e=>{
+        const col = e.type==="Boot"?"#0fa678":e.type==="Rondvaart"?"#2478cc":"#d98b00";
+        html+=`<div class="row" style="justify-content:space-between;margin-top:4px">
+          <div><span style="color:${col}">${e.type}</span> — ${e.title}</div>
+          <div class="muted">${e.time}</div>
+        </div>
+        <div class="muted" style="margin-left:6px">${e.info}</div>`;
+      });
+    }
+    html+=`</div>`;
+  });
+  box.innerHTML=html;
+}
+</script>
+<!-- ====================== EINDE MODULE 5 ====================== -->
+
+  <!-- ====================== MODULE 6: Visuele Tijdlijn binnen Kalender ====================== -->
+<script>
+/*
+🕒 MODULE 6 — VISUELE TIJDLIJN (IN KALENDER)
+----------------------------------------------
+Toont dagelijkse tijdlijn (06:00–24:00) met blokken voor:
+- Bootreserveringen (groen)
+- Educatieve rondvaarten (blauw)
+- Captainboekingen (oranje)
+*/
+document.addEventListener("DOMContentLoaded", ()=>{
+  // Voeg knop toe in kalender
+  const calBtn = setInterval(()=>{
+    const cal = document.getElementById("calendar-content");
+    if(cal && !document.getElementById("btn-timeline")){
+      const btn=document.createElement("button");
+      btn.id="btn-timeline";
+      btn.className="small";
+      btn.style.marginBottom="10px";
+      btn.textContent="🕒 Bekijk Tijdlijn";
+      btn.onclick=()=>openTimeline();
+      cal.parentElement.insertBefore(btn, cal);
+      clearInterval(calBtn);
+    }
+  },500);
+});
+
+function openTimeline(){
+  let scr=document.getElementById("screen-timeline");
+  if(!scr){
+    scr=document.createElement("div");
+    scr.id="screen-timeline";
+    scr.className="screen active";
+    scr.innerHTML=`
+      <div class="row" style="justify-content:space-between">
+        <h1>🕒 Dag Tijdlijn</h1>
+        <button class="small" onclick="openCalendar()">Terug</button>
+      </div>
+      <label>Datum</label><input type="date" id="timeline-date" onchange="renderTimeline()"/>
+      <canvas id="timeline-canvas" width="800" height="400" style="width:100%;max-width:800px;border:1px solid #ccc;border-radius:10px;background:#fff;"></canvas>
+      <div class="muted" style="margin-top:6px">Kleuren: Groen = Boot, Blauw = Rondvaart, Oranje = Captain</div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-timeline");
+  document.getElementById("timeline-date").value=new Date().toISOString().split("T")[0];
+  renderTimeline();
+}
+
+function renderTimeline(){
+  const dateStr=document.getElementById("timeline-date").value;
+  const canvas=document.getElementById("timeline-canvas");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  const hours=Array.from({length:19},(_,i)=>i+6); // 06–24
+  const colWidth=canvas.width/(hours.length-1);
+  ctx.strokeStyle="#aaa";
+  ctx.font="12px sans-serif";
+  ctx.fillStyle="#333";
+
+  // Uur-lijnen
+  hours.forEach((h,i)=>{
+    const x=i*colWidth;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();
+    ctx.fillText(`${h}:00`,x+2,12);
+  });
+
+  // Verzamel alle evenementen
+  let events=[];
+  const filterFn=(d)=>d.toISOString().startsWith(dateStr);
+
+  // Boot
+  (STORE.reservations||[]).forEach(r=>{
+    const s=new Date(r.start);
+    const e=new Date(r.end);
+    if(filterFn(s)){
+      if(isAdmin()||r.users.includes(currentUser.name)){
+        events.push({type:"Boot",title:`Boot ${r.boatId}`,start:s,end:e,color:"#0fa678"});
+      }
+    }
+  });
+
+  // Rondvaarten
+  (STORE.tours||[]).forEach(t=>{
+    const s=new Date(t.datetime);
+    if(filterFn(s)){
+      if(isAdmin()||t.participants.includes(currentUser.name)){
+        const e=new Date(s.getTime()+2*3600000);
+        events.push({type:"Rondvaart",title:t.title,start:s,end:e,color:"#2478cc"});
+      }
+    }
+  });
+
+  // Captains
+  (STORE.captainBookings||[]).forEach(b=>{
+    const s=new Date(b.start);
+    if(filterFn(s)){
+      if(isAdmin()||b.user===currentUser.name){
+        const e=new Date(s.getTime()+b.duration*3600000);
+        events.push({type:"Captain",title:b.captain,start:s,end:e,color:"#d98b00"});
+      }
+    }
+  });
+
+  if(events.length===0){
+    ctx.fillStyle="#666"; ctx.fillText("Geen activiteiten vandaag",canvas.width/2-60,canvas.height/2);
+    return;
+  }
+
+  // Render events als blokken
+  const yStart=40, rowHeight=50;
+  events.forEach((ev,i)=>{
+    const startH=ev.start.getHours()+ev.start.getMinutes()/60;
+    const endH=ev.end.getHours()+ev.end.getMinutes()/60;
+    const x1=(startH-6)*colWidth, x2=(endH-6)*colWidth;
+    const y=yStart+i*rowHeight;
+    ctx.fillStyle=ev.color;
+    ctx.fillRect(x1,y,Math.max(10,x2-x1),30);
+    ctx.fillStyle="#fff";
+    ctx.fillText(`${ev.title}`,x1+6,y+20);
+    ctx.fillStyle="#333";
+    ctx.fillText(`${ev.start.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}-${ev.end.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`,x1+6,y+38);
+  });
+}
+</script>
+<!-- ====================== EINDE MODULE 6 ====================== -->
+
+<!-- ====================== MODULE 7: Statistieken & Dashboard ====================== -->
+<script>
+/*
+📊 MODULE 7 — DASHBOARD MET STATISTIEKEN
+-----------------------------------------
+Toont o.a.:
+- Gebruik per boot (reserveringen)
+- Populairste rondvaart
+- Meest geboekte captain
+- Puntenverdeling tussen gebruikers
+- Totale vaartijd per gebruiker
+
+📅 Admin ziet alles, gebruikers alleen eigen data.
+*/
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  const topBar=document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if(topBar && !document.getElementById("btn-dashboard")){
+    const btn=document.createElement("button");
+    btn.id="btn-dashboard";
+    btn.className="small";
+    btn.textContent="📊 Dashboard";
+    btn.onclick=()=>openDashboard();
+    topBar.insertBefore(btn, topBar.children[2]);
+  }
+});
+
+function openDashboard(){
+  let scr=document.getElementById("screen-dashboard");
+  if(!scr){
+    scr=document.createElement("div");
+    scr.id="screen-dashboard";
+    scr.className="screen active";
+    scr.innerHTML=`
+      <div class="row" style="justify-content:space-between">
+        <h1>📊 Statistieken & Dashboard</h1>
+        <button class="small" onclick="backHome()">Terug</button>
+      </div>
+      <canvas id="chart-usage" width="800" height="300" style="width:100%;max-width:800px;background:#fff;border:1px solid #ccc;border-radius:10px;margin-bottom:10px;"></canvas>
+      <canvas id="chart-points" width="800" height="300" style="width:100%;max-width:800px;background:#fff;border:1px solid #ccc;border-radius:10px;margin-bottom:10px;"></canvas>
+      <canvas id="chart-users" width="800" height="300" style="width:100%;max-width:800px;background:#fff;border:1px solid #ccc;border-radius:10px;margin-bottom:10px;"></canvas>
+      <div class="muted">Gebruik per boot • Puntenverdeling • Vaartijd per gebruiker</div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-dashboard");
+  renderDashboard();
+}
+
+function renderDashboard(){
+  renderUsageChart();
+  renderPointsChart();
+  renderUserHoursChart();
+}
+
+/* ---------- BOOTGEBRUIK ---------- */
+function renderUsageChart(){
+  const c=document.getElementById("chart-usage");
+  const ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.font="12px sans-serif";
+  ctx.fillText("Bootgebruik (reserveringen per boot)",10,20);
+  const boats=STORE.boats||[];
+  const res=STORE.reservations||[];
+  boats.forEach((b,i)=>{
+    const count=res.filter(r=>r.boatId===b.id).length;
+    const h= count*25;
+    ctx.fillStyle="#0fa678";
+    ctx.fillRect(60+i*120,260-h,80,h);
+    ctx.fillStyle="#333";
+    ctx.fillText(b.name,60+i*120,280);
+    ctx.fillText(count+"x",85+i*120,240-h);
+  });
+}
+
+/* ---------- PUNTENVERDELING ---------- */
+function renderPointsChart(){
+  const c=document.getElementById("chart-points");
+  const ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.font="12px sans-serif";
+  ctx.fillText("Puntenverdeling",10,20);
+  const users=STORE.users||[];
+  const max=Math.max(...users.map(u=>u.points||0),1);
+  users.forEach((u,i)=>{
+    const w=(u.points/max)*700;
+    ctx.fillStyle="#2478cc";
+    ctx.fillRect(80,40+i*25,w,18);
+    ctx.fillStyle="#333";
+    ctx.fillText(u.name,10,54+i*25);
+    ctx.fillText(u.points.toFixed(2)+" pt",90+w,54+i*25);
+  });
+}
+
+/* ---------- GEBRUIKERS-UUR ---------- */
+function renderUserHoursChart(){
+  const c=document.getElementById("chart-users");
+  const ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.font="12px sans-serif";
+  ctx.fillText("Totale vaartijd per gebruiker (uren)",10,20);
+  const totals={};
+  (STORE.reservations||[]).forEach(r=>{
+    const hrs=Math.max(1,Math.round((new Date(r.end)-new Date(r.start))/3600000));
+    r.users.forEach(u=>{
+      if(!totals[u]) totals[u]=0;
+      totals[u]+=hrs;
+    });
+  });
+  const names=Object.keys(totals);
+  names.forEach((n,i)=>{
+    const h=totals[n];
+    ctx.fillStyle="#d98b00";
+    ctx.fillRect(60+i*120,260-h*10,80,h*10);
+    ctx.fillStyle="#333";
+    ctx.fillText(n,60+i*120,280);
+    ctx.fillText(h+"u",85+i*120,240-h*10);
+  });
+}
+</script>
+<!-- ====================== EINDE MODULE 7 ====================== -->
+
+ <!-- ====================== MODULE 8: Real-time Live Feed & Toasts ====================== -->
+<script>
+/*
+🛎️ MODULE 8 — LIVE FEED
+-------------------------
+- Voegt een "🔔 Feed"-knop toe in het Home topmenu.
+- Toont toasts (rechtsboven) bij belangrijke events.
+- Bewaart alle meldingen in STORE.feed en toont ze in een Feed-scherm.
+- Haakt in op bestaande functies (reserveSlot, joinExact, quickJoin, setWeather, activate, create/join/leave tour, bookCaptain).
+- Detecteert ook penalty/bonus wijzigingen en meldt die 1x.
+*/
+
+if(!STORE.feed) STORE.feed = [];
+
+/* ---------- UI: knop + toast container + feed screen ---------- */
+document.addEventListener("DOMContentLoaded", ()=>{
+  // Topmenu-knop
+  const topBar = document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if(topBar && !document.getElementById("btn-feed")){
+    const btn=document.createElement("button");
+    btn.id="btn-feed"; btn.className="small"; btn.textContent="🔔 Feed";
+    btn.onclick=()=>openFeed();
+    // Zet hem vlak voor Admin (zoals andere modules)
+    const idx = Math.min( topBar.children.length-1, 2 );
+    topBar.insertBefore(btn, topBar.children[idx]);
+  }
+  // Toast container
+  if(!document.getElementById("toast-wrap")){
+    const wrap=document.createElement("div");
+    wrap.id="toast-wrap";
+    wrap.style.cssText="position:fixed;right:12px;top:12px;display:flex;flex-direction:column;gap:8px;z-index:9999";
+    document.body.appendChild(wrap);
+  }
+});
+
+function openFeed(){
+  let scr=document.getElementById("screen-feed");
+  if(!scr){
+    scr=document.createElement("div");
+    scr.id="screen-feed"; scr.className="screen active";
+    scr.innerHTML=`
+      <div class="row" style="justify-content:space-between">
+        <h1>🔔 Live Feed</h1>
+        <button class="small" onclick="backHome()">Terug</button>
+      </div>
+      <div id="feed-list" class="card"></div>
+    `;
+    document.getElementById("app").appendChild(scr);
+  }
+  show("screen-feed"); renderFeed();
+}
+function renderFeed(){
+  const box=document.getElementById("feed-list"); box.innerHTML="";
+  if(!STORE.feed.length){ box.innerHTML='<div class="muted">Nog geen meldingen</div>'; return; }
+  STORE.feed.slice().reverse().forEach(f=>{
+    const d=document.createElement("div"); d.className="msg";
+    d.innerHTML=`<div class="muted">${new Date(f.t).toLocaleString()}</div><div>${f.m}</div>`;
+    box.appendChild(d);
+  });
+}
+
+function notify(message){
+  STORE.feed.push({t:new Date().toISOString(), m:message});
+  save();
+  renderFeedSilent();
+  showToast(message);
+}
+function renderFeedSilent(){
+  // Update feed scherm indien open
+  const el=document.getElementById("feed-list");
+  if(el && document.getElementById("screen-feed")?.classList.contains("active")){
+    renderFeed();
+  }
+}
+function showToast(text){
+  const wrap=document.getElementById("toast-wrap");
+  if(!wrap) return;
+  const t=document.createElement("div");
+  t.className="card"; t.style.minWidth="240px";
+  t.innerHTML=`${text}`;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0.9"; },10);
+  setTimeout(()=>{ t.style.opacity="0.6"; },2500);
+  setTimeout(()=>{ t.remove(); },4200);
+}
+
+/* ---------- Hooks: monkey-patch bestaande functies veilig ---------- */
+function hook(fnName, wrapper){
+  const orig = window[fnName];
+  if(typeof orig!=="function") return; // niets te hooken
+  window[fnName] = function(...args){ return wrapper(orig, ...args); };
+}
+
+/* Reserveer / Join */
+hook("reserveSlot", (orig, ...args)=>{
+  const before=STORE.reservations?.length||0;
+  const res = orig.apply(this,args);
+  const after=STORE.reservations?.length||0;
+  if(after>before){
+    const r = STORE.reservations[STORE.reservations.length-1];
+    const b = STORE.boats.find(x=>x.id===r.boatId)?.name||"Boot";
+    notify(`🗓️ ${currentUser.name} maakte een reservering voor ${b} (${new Date(r.start).toLocaleString()})`);
+  }else{
+    notify(`➕ ${currentUser.name} voegde zich toe aan een reservering`);
+  }
+  return res;
+});
+hook("joinExact",(orig,...args)=>{ const out=orig.apply(this,args); notify(`🤝 ${currentUser.name} joined exact slot`); return out; });
+hook("quickJoin",(orig,id)=>{ const out=orig.call(this,id); const r=STORE.reservations.find(x=>x.id===id); if(r){ notify(`🤝 ${currentUser.name} joined slot ${new Date(r.start).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`);} return out; });
+
+/* Weer-gate */
+hook("setWeather",(orig,...args)=>{ const out=orig.apply(this,args); notify(`🌦️ Admin wijzigde weer-gate naar: ${STORE.weather.code.toUpperCase()}`); return out; });
+
+/* Smartlock */
+hook("activate",(orig,id)=>{ const out=orig.call(this,id); const r=STORE.reservations.find(x=>x.id===id); if(r && r.status==='active'){ const b=STORE.boats.find(x=>x.id===r.boatId)?.name||'Boot'; notify(`🔓 Smartlock geopend voor ${b} door ${currentUser.name}`);} return out; });
+
+/* Educatieve rondvaarten (Module 3) */
+hook("createTour",(orig,...args)=>{ const out=orig.apply(this,args); notify(`🎓 Nieuwe rondvaart gepland`); return out; });
+hook("joinTour",(orig,id)=>{ const out=orig.call(this,id); const t=STORE.tours.find(x=>x.id===id); if(t && t.participants.includes(currentUser.name)) notify(`🎓 ${currentUser.name} schreef zich in: "${t.title}"`); return out; });
+hook("leaveTour",(orig,id)=>{ const out=orig.call(this,id); const t=STORE.tours.find(x=>x.id===id); notify(`🚪 ${currentUser.name} schreef zich uit voor een rondvaart`); return out; });
+
+/* Captains (Module 4) */
+hook("addCaptain",(orig,...args)=>{ const out=orig.apply(this,args); notify(`🧭 Nieuwe captain toegevoegd`); return out; });
+hook("bookCaptain",(orig,...args)=>{ const out=orig.apply(this,args); notify(`📒 ${currentUser.name} boekte een captain`); return out; });
+
+/* ---------- Detecteer penalty en bonus en meld 1x ---------- */
+setInterval(()=>{
+  (STORE.reservations||[]).forEach(r=>{
+    // Penalty detect
+    if(typeof r.penaltyApplied==="number"){
+      if(r._notifiedPenaltyQ===undefined) r._notifiedPenaltyQ = 0;
+      if(r.penaltyApplied > r._notifiedPenaltyQ){
+        notify(`⚠️ Te laat opleveren: -0,25 pt per deelnemer toegepast`);
+        r._notifiedPenaltyQ = r.penaltyApplied;
+        save();
+      }
+    }
+    // Bonus detect
+    if(r.bonusGiven && !r._bonusNotified){
+      notify(`✅ Op tijd opgeleverd: +0,1 pt bonus toegekend`);
+      r._bonusNotified = true; save();
+    }
+  });
+}, 15000);
+
+/* ---------- Extra: meld puntenaanpassing door admin (Module 1) ---------- */
+function adjustPoints(name,delta){
+  // Als adjustPoints al bestond in Module 1, maak een fallback wrapper
+  const u=STORE.users.find(x=>x.name===name); if(!u) return;
+  u.points=Math.max(0,+(u.points+delta).toFixed(2));
+  save();
+  notify(`🧮 Admin wijzigde punten van ${name}: ${delta>0?'+':''}${delta} pt (nu ${u.points.toFixed(2)} pt)`);
+  if(typeof renderAdminUsers==="function") renderAdminUsers();
+}
+</script>
+<!-- ====================== EINDE MODULE 8 ====================== -->
+
+  <!-- ====================== MODULE 9: Rollen & Web-notificaties ====================== -->
+<script>
+/*
+MODULE 9 — ROLLEN & WEB-NOTIFICATIES
+-------------------------------------
+• Rollen: user, moderator, maintenance, admin
+• Admin kan rollen toewijzen (in Admin-scherm)
+• Moderator/Admin: berichten in chat kunnen verwijderen
+• Maintenance/Admin: boten in/uit onderhoud; reserveren geblokkeerd bij onderhoud
+• Web Notifications: knop in topmenu om toestemming te vragen; meldingen via notify()
+*/
+
+(function initRoles(){
+  (STORE.users||[]).forEach(u=>{
+    if(!u.role) u.role = (u.name==='drifty'?'admin':'user');
+  });
+  save();
+})();
+
+function hasRole(...roles){
+  const r = (currentUser?.role)||'user';
+  return roles.includes(r) || (r==='admin'); // admin mag alles
+}
+
+/* --------- UI: knop voor Web-notificaties in topmenu --------- */
+document.addEventListener("DOMContentLoaded", ()=>{
+  const topBar = document.querySelector("#screen-home .row:nth-child(1) > .row");
+  if(topBar && !document.getElementById("btn-notify")){
+    const btn=document.createElement("button");
+    btn.id="btn-notify"; btn.className="small"; btn.textContent="🔔 Notificaties";
+    btn.onclick=enableWebNotifications;
+    // zet vlak voor Admin
+    const idx = Math.min(topBar.children.length-1, 2);
+    topBar.insertBefore(btn, topBar.children[idx]);
+  }
+});
+
+/* --------- Web Notifications integratie met notify() --------- */
+async function enableWebNotifications(){
+  if(!("Notification" in window)) return alert("Browser ondersteunt geen Web Notifications.");
+  try{
+    const perm = await Notification.requestPermission();
+    localStorage.setItem("drifty_notify", perm);
+    alert(perm==='granted' ? "Notificaties ingeschakeld" : "Notificaties geweigerd");
+  }catch(e){ alert("Kon notificaties niet inschakelen."); }
+}
+
+(function patchNotifyForWeb(){
+  const origNotify = window.notify;
+  if(typeof origNotify!=="function") return;
+  window.notify = function(message){
+    const out = origNotify.call(this, message);
+    try{
+      const perm = localStorage.getItem("drifty_notify");
+      if(perm==='granted' && "Notification" in window){
+        new Notification("DRIFTY", { body: message });
+      }
+    }catch(e){}
+    return out;
+  }
+})();
+
+/* --------- Admin: Rollenbeheer in Admin-scherm --------- */
+(function extendAdminScreen(){
+  const origOpenAdmin = window.openAdmin;
+  window.openAdmin = function(){
+    if(currentUser?.name!=='drifty') return alert('Alleen admin (drifty)');
+    origOpenAdmin.call(this);
+    renderRolesAdmin();
+    renderBoatsAdmin();
+  }
+})();
+
+function renderRolesAdmin(){
+  let box = document.getElementById("admin-roles");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "admin-roles";
+    box.className = "card";
+    document.getElementById("screen-admin").appendChild(box);
+  }
+  box.innerHTML = `<h2>Rollen & rechten</h2>`;
+  (STORE.users||[]).forEach(u=>{
+    const row = document.createElement("div");
+    row.className = "row"; row.style.justifyContent="space-between";
+    row.innerHTML = `
+      <div><strong>${u.name}</strong> — <span class="muted">${u.role||'user'}</span></div>
+      <div class="row">
+        <select id="sel-role-${u.name}">
+          <option value="user">user</option>
+          <option value="moderator">moderator</option>
+          <option value="maintenance">maintenance</option>
+          <option value="admin">admin</option>
+        </select>
+        <button class="small" onclick="setUserRole('${u.name}')">Opslaan</button>
+      </div>`;
+    box.appendChild(row);
+    setTimeout(()=>{ const sel=document.getElementById(`sel-role-${u.name}`); if(sel) sel.value = u.role||'user'; },0);
+  });
+}
+
+function setUserRole(name){
+  if(currentUser?.name!=='drifty') return alert('Alleen admin');
+  const sel = document.getElementById(`sel-role-${name}`);
+  const u = STORE.users.find(x=>x.name===name); if(!u||!sel) return;
+  u.role = sel.value; save();
+  notify(`👤 Rol aangepast: ${name} → ${u.role}`);
+  renderRolesAdmin();
+}
+
+/* --------- Moderator: Chat-berichten verwijderen --------- */
+(function patchRenderChatList(){
+  const orig = window.renderChatList;
+  if(typeof orig!=="function") return;
+  window.renderChatList = function(){
+    orig.call(this);
+    if(!hasRole('moderator')) return;
+    const list = document.getElementById("chat-list");
+    if(!list) return;
+    // Voeg delete knoppen toe
+    Array.from(list.querySelectorAll('.msg')).forEach((el,idx)=>{
+      if(el.querySelector('.btn-del')) return;
+      const btn = document.createElement('button');
+      btn.textContent = '🗑️';
+      btn.className = 'small btn-del';
+      btn.style.marginLeft='6px';
+      btn.onclick = ()=> deleteChatByIndex(idx);
+      el.appendChild(btn);
+    });
+  }
+})();
+function deleteChatByIndex(idx){
+  // Bepaal message op basis van weergave-volgorde (hetzelfde als renderChatList)
+  const resIds=(STORE.reservations||[]).filter(r=>r.boatId===currentBoatId).map(r=>r.id);
+  const msgs=(STORE.chats||[]).filter(m=>resIds.includes(m.resId)).sort((a,b)=>new Date(a.time)-new Date(b.time));
+  const toDel = msgs[idx];
+  if(!toDel) return;
+  // verwijder uit STORE.chats
+  const pos = STORE.chats.findIndex(m=>m.id===toDel.id);
+  if(pos>-1) STORE.chats.splice(pos,1);
+  save();
+  notify(`🧹 Chatbericht verwijderd door ${currentUser.name}`);
+  renderChatList();
+}
+
+/* --------- Maintenance: Boten beheer & reserve-blokkade --------- */
+function renderBoatsAdmin(){
+  let box = document.getElementById("admin-boats");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "admin-boats";
+    box.className = "card";
+    document.getElementById("screen-admin").appendChild(box);
+  }
+  box.innerHTML = `<h2>Booten — onderhoud</h2>`;
+  (STORE.boats||[]).forEach(b=>{
+    const row=document.createElement('div');
+    row.className='row'; row.style.justifyContent='space-between';
+    row.innerHTML = `
+      <div><strong>${b.name}</strong> — <span class="muted">${b.status}</span></div>
+      <div class="row">
+        <button class="small" onclick="setBoatStatus(${b.id}, 'available')">Beschikbaar</button>
+        <button class="small" onclick="setBoatStatus(${b.id}, 'maintenance')">Onderhoud</button>
+      </div>`;
+    box.appendChild(row);
+  });
+}
+
+function setBoatStatus(id,status){
+  if(!hasRole('maintenance')) return alert('Alleen maintenance/admin');
+  const b=STORE.boats.find(x=>x.id===id); if(!b) return;
+  b.status = status;
+  save();
+  notify(`🛠️ Bootstatus ${b.name}: ${status}`);
+  renderBoatsAdmin(); // refresh lijst
+  // home UI updaten
+  if(document.getElementById('screen-home').classList.contains('active')) renderHome();
+}
+
+/* Blokkeer reserveren als boot in onderhoud */
+(function patchReserveSlot(){
+  const orig = window.reserveSlot;
+  if(typeof orig!=="function") return;
+  window.reserveSlot = function(){
+    const b=STORE.boats.find(x=>x.id===currentBoatId);
+    if(b?.status==='maintenance') return alert('Deze boot is in onderhoud en kan niet gereserveerd worden.');
+    return orig.apply(this, arguments);
+  }
+})();
+</script>
+<!-- ====================== EINDE MODULE 9 ====================== -->
+
+<!-- ====================== MODULE 11: Drifty Wallet ====================== -->
+<script>
+/*
+Drifty Wallet
+-------------
+- Toont visuele wallet onder het profiel.
+- Gebruikers zien puntentransacties.
+- Admin kan bonus of penalty toevoegen met beschrijving.
+- Verwerkt bestaande STORE.users[].points transacties.
+*/
+if(!STORE.wallet) STORE.wallet = [];
+
+function logTransaction(user, amount, desc){
+  STORE.wallet.push({
+    user,
+    amount,
+    desc,
+    time: new Date().toISOString()
+  });
+  save();
+}
+
+(function patchAdjustPointsForWallet(){
+  const orig = window.adjustPoints;
+  if(typeof orig === "function"){
+    window.adjustPoints = function(name, delta){
+      orig.call(this, name, delta);
+      logTransaction(name, delta, `Handmatige aanpassing door admin`);
+    }
+  }
+})();
+
+(function extendProfileWallet(){
+  const origRenderProfile = window.renderProfile;
+  if(typeof origRenderProfile !== "function") return;
+  window.renderProfile = function(){
+    origRenderProfile.call(this);
+    const p = document.getElementById("screen-profile");
+    if(!p) return;
+    const walletDiv = document.createElement("div");
+    walletDiv.className = "card";
+    walletDiv.innerHTML = `<h2>💰 Drifty Wallet</h2>
+      <div id="wallet-list"></div>`;
+    p.appendChild(walletDiv);
+    renderWallet();
+  }
+})();
+
+function renderWallet(){
+  const box = document.getElementById("wallet-list");
+  if(!box) return;
+  const tx = STORE.wallet.filter(t=>t.user===currentUser.name);
+  if(!tx.length){ box.innerHTML = '<div class="muted">Nog geen transacties</div>'; return; }
+  box.innerHTML = tx.slice().reverse().map(t=>`
+    <div class="row" style="justify-content:space-between">
+      <div>${t.desc}</div>
+      <div class="muted">${t.amount>0?'+':''}${t.amount} pt</div>
+    </div>`).join('');
+}
+</script>
+<!-- ====================== EINDE MODULE 11 ====================== -->
+
+<!-- ====================== MODULE 12: Educatieve Audio & Rondvaart-info ====================== -->
+<script>
+/*
+Educatieve Audio & Info
+-----------------------
+- Voegt bij elke rondvaart een korte beschrijving en audiofragment toe.
+- Gebruikers kunnen luisteren tijdens deelname.
+- Geen nieuwe knop; haakt in op bestaande "Educatieve Rondvaarten".
+*/
+
+if(!STORE.tourInfo) STORE.tourInfo = {
+  "Amsterdamse Grachten": {
+    desc: "Leer over de 17e-eeuwse handel, grachtenpanden en verborgen schatten van de stad.",
+    audio: "audio/amsterdam-tour.mp3"
+  },
+  "Natuurtocht Vondelpark": {
+    desc: "Ontdek de flora en fauna van Amsterdam, begeleid door een lokale bioloog.",
+    audio: "audio/natuur-tour.mp3"
+  }
+};
+
+(function extendRenderTours(){
+  const origRenderTours = window.renderTours;
+  if(typeof origRenderTours!=="function") return;
+  window.renderTours = function(){
+    origRenderTours.call(this);
+    (STORE.tours||[]).forEach(t=>{
+      const el = document.getElementById(`tour-${t.id}`);
+      const info = STORE.tourInfo[t.title];
+      if(el && info && !el.querySelector('.edu-info')){
+        const div=document.createElement('div');
+        div.className='edu-info';
+        div.innerHTML=`<p>${info.desc}</p>
+          ${info.audio ? `<audio controls src="${info.audio}" style="width:100%"></audio>`:''}`;
+        el.appendChild(div);
+      }
+    });
+  }
+})();
+</script>
+<!-- ====================== EINDE MODULE 12 ====================== -->
+
+<!-- ====================== MODULE 13: Community Challenges & Teams ====================== -->
+<script>
+/*
+Community uitbreidingen
+-----------------------
+- Gebruikers kunnen teams vormen (Crew).
+- Maandelijkse challenge zichtbaar in profiel.
+- Haakt in op bestaande profiel- en feedmodules.
+*/
+
+if(!STORE.teams) STORE.teams = [];
+
+function getUserTeam(user){
+  return STORE.teams.find(t=>t.members.includes(user));
+}
+
+(function extendProfileWithCommunity(){
+  const orig = window.renderProfile;
+  if(typeof orig!=="function") return;
+  window.renderProfile = function(){
+    orig.call(this);
+    const p=document.getElementById("screen-profile");
+    if(!p) return;
+    const teamDiv=document.createElement("div");
+    teamDiv.className="card";
+    const team = getUserTeam(currentUser.name);
+    teamDiv.innerHTML = `<h2>👥 Crew</h2>
+      ${team ? `<p>${team.name} (${team.members.length} leden)</p>` :
+      `<p class="muted">Nog geen crew. <button class='small' onclick='createCrew()'>Maak er een</button></p>`}`;
+    p.appendChild(teamDiv);
+
+    const chal=document.createElement("div");
+    chal.className="card";
+    chal.innerHTML = `<h2>🏆 Challenge</h2>
+      <p>Vaar 5 keer deze maand voor +1 punt.</p>`;
+    p.appendChild(chal);
+  }
+})();
+
+function createCrew(){
+  const name=prompt("Naam van de crew:");
+  if(!name) return;
+  STORE.teams.push({name, members:[currentUser.name]});
+  save();
+  notify(`👥 ${currentUser.name} heeft crew '${name}' opgericht`);
+  show("screen-profile");
+}
+</script>
+<!-- ====================== EINDE MODULE 13 ====================== -->
+
+<!-- ====================== MODULE 14: Partner Integraties ====================== -->
+<script>
+/*
+Partner Integraties
+-------------------
+- Voeg partnerproducten toe aan de bestaande shop (bijv. horeca, evenementen).
+- Geen extra knop, alleen uitbreiding van de shop.
+*/
+
+if(!STORE.partners) STORE.partners = [
+  { name: "Café de Haven", desc: "Bestel snacks & drankjes aan boord", price: 0.25, type: "horeca" },
+  { name: "Canal Market", desc: "Souvenirs & zonnebrillen", price: 0.5, type: "shop" }
+];
+
+(function extendShopWithPartners(){
+  const origRenderShop = window.renderShop;
+  if(typeof origRenderShop!=="function") return;
+  window.renderShop = function(){
+    origRenderShop.call(this);
+    const box=document.getElementById("shop-list");
+    if(!box) return;
+    STORE.partners.forEach(p=>{
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`
+        <div class="row" style="justify-content:space-between">
+          <div><strong>${p.name}</strong><div class="muted">${p.desc}</div></div>
+          <button class="small" onclick="buyPartner('${p.name}', ${p.price})">${p.price} pt</button>
+        </div>`;
+      box.appendChild(div);
+    });
+  }
+})();
+
+function buyPartner(name, price){
+  const u=STORE.users.find(x=>x.name===currentUser.name);
+  if(!u) return;
+  if(u.points<price) return alert("Niet genoeg punten!");
+  u.points -= price;
+  save();
+  notify(`🤝 ${currentUser.name} kocht ${name} via partnerintegratie`);
+  renderShop();
+}
+</script>
+<!-- ====================== EINDE MODULE 14 ====================== -->
+
+<!-- ====================== MODULE 15: Monitoring & Support ====================== -->
+<script>
+/*
+Monitoring & Support
+--------------------
+- Toont supportmeldingen en systeemlogs in Admin.
+- Gebruikers kunnen incidenten rapporteren via Profiel.
+- Integreert met bestaande Feed.
+*/
+
+if(!STORE.support) STORE.support = [];
+
+function reportSupport(issue){
+  STORE.support.push({ user: currentUser.name, issue, time:new Date().toISOString() });
+  save();
+  notify(`🛟 ${currentUser.name} meldde: ${issue}`);
+}
+
+(function extendProfileWithSupport(){
+  const orig = window.renderProfile;
+  if(typeof orig!=="function") return;
+  window.renderProfile = function(){
+    orig.call(this);
+    const p=document.getElementById("screen-profile");
+    if(!p) return;
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`
+      <h2>🛟 Support</h2>
+      <textarea id="support-txt" placeholder="Beschrijf je probleem..." style="width:100%;height:60px"></textarea>
+      <button class="small" onclick="sendSupport()">Versturen</button>`;
+    p.appendChild(div);
+  }
+})();
+
+function sendSupport(){
+  const txt=document.getElementById("support-txt").value.trim();
+  if(!txt) return alert("Beschrijf eerst het probleem.");
+  reportSupport(txt);
+  alert("Supportmelding verstuurd!");
+  show("screen-profile");
+}
+
+(function extendAdminWithSupport()){
+  const orig=window.openAdmin;
+  if(typeof orig!=="function") return;
+  window.openAdmin=function(){
+    orig.call(this);
+    const box=document.createElement("div");
+    box.className="card";
+    box.innerHTML=`<h2>📋 Supportmeldingen</h2>
+      <div id="support-list"></div>`;
+    document.getElementById("screen-admin").appendChild(box);
+    renderSupportAdmin();
+  }
+})();
+
+function renderSupportAdmin(){
+  const box=document.getElementById("support-list");
+  if(!box) return;
+  if(!STORE.support.length){ box.innerHTML='<div class="muted">Geen meldingen</div>'; return; }
+  box.innerHTML=STORE.support.slice().reverse().map(s=>`
+    <div class="msg"><div><strong>${s.user}</strong>: ${s.issue}</div>
+    <div class="muted">${new Date(s.time).toLocaleString()}</div></div>`).join('');
+}
+</script>
+<!-- ====================== EINDE MODULE 15 ====================== -->
+
+<!-- ====================== DRIFTY PATCH v2 (werkt met bestaande shop) ====================== -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚤 Drifty patch v2 actief");
+
+  function addProfileExtras() {
+    const p = document.getElementById("screen-profile");
+    if (!p || p.querySelector("#wallet-card")) return;
+    p.insertAdjacentHTML("beforeend", `
+      <div class="card" id="wallet-card">
+        <h2>💰 Wallet & Transacties</h2>
+        <p class="muted">Hier komen je aankopen en verdiensten.</p>
+      </div>
+      <div class="card" id="crew-card">
+        <h2>👥 Crew-team</h2>
+        <p class="muted">Nog geen crew. 
+          <button class="small" onclick="alert('Crewfunctie volgt later')">Maak er een</button>
+        </p>
+      </div>
+      <div class="card" id="support-card">
+        <h2>🛟 Support</h2>
+        <textarea placeholder="Beschrijf je probleem..." style="width:100%;height:60px"></textarea>
+        <button class="small" onclick="alert('Supportmelding verstuurd!')">Versturen</button>
+      </div>`);
+  }
+
+  function addPartnerDeals() {
+    const s = document.getElementById("shop-list") || document.getElementById("screen-shop");
+    if (!s || s.querySelector("#partner-card")) return;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.id = "partner-card";
+    card.innerHTML = `
+      <h2>🤝 Partnerdeals</h2>
+      <div class="row" style="justify-content:space-between">
+        <div><strong>Café de Haven</strong><div class="muted">Snacks & drankjes aan boord</div></div>
+        <button class="small" onclick="alert('Besteld bij Café de Haven!')">0.25 pt</button>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:4px">
+        <div><strong>Canal Market</strong><div class="muted">Souvenirs & zonnebrillen</div></div>
+        <button class="small" onclick="alert('Besteld bij Canal Market!')">0.5 pt</button>
+      </div>`;
+    s.appendChild(card);
+  }
+
+  function addTourInfo() {
+    const t = document.getElementById("screen-tours");
+    if (!t || t.querySelector("#edu-card")) return;
+    t.insertAdjacentHTML("beforeend", `
+      <div class="card" id="edu-card">
+        <h2>🎓 Educatieve Rondvaarten</h2>
+        <p>Luister naar korte audioverhalen over Amsterdam en duurzaamheid.</p>
+        <audio controls src="" style="width:100%"></audio>
+      </div>`);
+  }
+
+  function addAdminSupport() {
+    const a = document.getElementById("screen-admin");
+    if (!a || a.querySelector("#support-log")) return;
+    a.insertAdjacentHTML("beforeend", `
+      <div class="card" id="support-log">
+        <h2>📋 Supportmeldingen</h2>
+        <div class="muted">Nog geen meldingen ontvangen.</div>
+      </div>`);
+  }
+
+  function refreshExtras() {
+    if (document.getElementById("screen-profile")?.classList.contains("active")) addProfileExtras();
+    if (document.getElementById("screen-shop")?.classList.contains("active")) {
+      setTimeout(addPartnerDeals, 300); // ⏱ wacht tot renderShop klaar is
+    }
+    if (document.getElementById("screen-tours")?.classList.contains("active")) addTourInfo();
+    if (document.getElementById("screen-admin")?.classList.contains("active")) addAdminSupport();
+  }
+
+  // 1e keer bij laden
+  setTimeout(refreshExtras, 800);
+
+  // bij navigatie
+  document.body.addEventListener("click", e => {
+    const t = e.target.closest("button,a");
+    if (t && (t.id.includes("btn-") || t.id.includes("link-"))) {
+      setTimeout(refreshExtras, 400);
+    }
+  });
+});
+</script>
+<!-- ====================== EINDE DRIFTY PATCH v2 ====================== -->
+
+  <!-- ===================== DRIFTY ADMIN DASHBOARD ===================== -->
+<section id="screen-admin" class="screen hidden">
+  <div class="header">
+    <h1>⚙️ Drifty Admin Dashboard</h1>
+    <button class="small" onclick="showScreen('screen-home')">🏠 Terug</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchAdminTab('users')">👥 Gebruikers</button>
+    <button class="tab-btn" onclick="switchAdminTab('support')">🛟 Support</button>
+    <button class="tab-btn" onclick="switchAdminTab('incidents')">🚨 Incidenten</button>
+    <button class="tab-btn" onclick="switchAdminTab('weather')">☁️ Weer</button>
+    <button class="tab-btn" onclick="switchAdminTab('data')">💾 Data</button>
+  </div>
+
+  <div id="admin-content" class="admin-content"></div>
+</section>
+
+<style>
+/* --- Styling --- */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.tab-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: #eef1f5;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s;
+}
+.tab-btn.active { background: #1e90ff; color: white; }
+.admin-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.admin-content button.small {
+  background: #1e90ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin: 2px;
+}
+.admin-content button.small:hover { opacity: 0.8; }
+</style>
+
+<script>
+/* ============================================================
+   DRIFTY ADMIN DASHBOARD FRONT-END
+   ============================================================ */
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.textContent.includes(tab[0].toUpperCase()))
+  );
+  renderAdminTab(tab);
+}
+
+function renderAdminTab(tab) {
+  const box = document.getElementById("admin-content");
+  box.innerHTML = "";
+
+  /* === Gebruikers === */
+  if (tab === "users") {
+    box.innerHTML = `<h2>👥 Gebruikersbeheer</h2>`;
+    if (!STORE.users.length) {
+      box.innerHTML += `<p class="muted">Nog geen gebruikers.</p>`;
+      return;
+    }
+    STORE.users.forEach(u => {
+      box.innerHTML += `
+        <div class="admin-card">
+          <strong>${u.name}</strong><br>
+          Punten: ${u.points.toFixed(2)}
+          <div>
+            <button class="small" onclick="DRIFTY_ADMIN.adjustPoints('${u.name}', +1)">+1</button>
+            <button class="small" onclick="DRIFTY_ADMIN.adjustPoints('${u.name}', -1)">-1</button>
+            <button class="small" onclick="DRIFTY_ADMIN.removeUser('${u.name}')">❌</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  /* === Support === */
+  if (tab === "support") {
+    box.innerHTML = `<h2>🛟 Supportmeldingen</h2>`;
+    if (!STORE.support.length) return box.innerHTML += `<p class="muted">Geen supportmeldingen.</p>`;
+    STORE.support.slice().reverse().forEach(s => {
+      box.innerHTML += `
+        <div class="admin-card ${s.done ? 'muted' : ''}">
+          <strong>${s.user}</strong> — ${new Date(s.time).toLocaleString()}<br>
+          ${s.text}<br>
+          ${s.done ? '✅ Afgehandeld' : `<button class="small" onclick="DRIFTY_ADMIN.markSupportDone(${s.id})">Markeer afgehandeld</button>`}
+        </div>`;
+    });
+  }
+
+  /* === Incidenten === */
+  if (tab === "incidents") {
+    box.innerHTML = `<h2>🚨 Incidentenlog</h2>`;
+    if (!STORE.incidents.length) {
+      box.innerHTML += `<p class="muted">Nog geen incidenten.</p>`;
+      return;
+    }
+    STORE.incidents.slice().reverse().forEach(i => {
+      box.innerHTML += `
+        <div class="admin-card ${i.status === 'gesloten' ? 'muted' : ''}">
+          <strong>${i.boat}</strong> — ${i.priority} — ${new Date(i.time).toLocaleString()}<br>
+          ${i.desc}<br>
+          ${i.status === 'open' 
+            ? `<button class="small" onclick="DRIFTY_ADMIN.closeIncident(${i.id})">Sluit</button>` 
+            : '✅ Gesloten'}
+        </div>`;
+    });
+  }
+
+  /* === Weer === */
+  if (tab === "weather") {
+    box.innerHTML = `
+      <h2>☁️ Weer-gate</h2>
+      <p>Code geel/rood verhindert dat nieuwe vaarten starten.</p>
+      <div class="admin-card">
+        Status: <strong>${STORE.weatherGate ? "🔴 Actief" : "🟢 Uit"}</strong><br>
+        <button class="small" onclick="DRIFTY_ADMIN.toggleWeatherGate()">Toggle</button>
+      </div>`;
+  }
+
+  /* === Data === */
+  if (tab === "data") {
+    box.innerHTML = `
+      <h2>💾 Data & Reset</h2>
+      <div class="admin-card">
+        <button class="small" onclick="DRIFTY_ADMIN.exportData()">⬇️ Exporteer JSON</button>
+        <button class="small" onclick="DRIFTY_ADMIN.resetSimulation()">🧨 Reset simulatie</button>
+      </div>
+      <div class="admin-card muted" style="font-size:12px;">
+        <pre>${JSON.stringify(STORE, null, 2)}</pre>
+      </div>`;
+  }
+}
+
+/* Automatisch tonen van de gebruikers-tab bij openen */
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("screen-admin")) {
+    switchAdminTab("users");
+  }
+});
+</script>
+<!-- ===================== EINDE DRIFTY ADMIN DASHBOARD ===================== -->
+
+  <!-- ===================== DRIFTY ADMIN ANALYTICS TAB ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+/* ============================================================
+   DRIFTY ANALYTICS TAB
+   Toont grafische inzichten over gebruikers, support en incidenten.
+   Gebruikt Chart.js en data uit STORE.
+   ============================================================ */
+
+function renderAnalyticsTab() {
+  const box = document.getElementById("admin-content");
+  box.innerHTML = `<h2>📊 Analytics Dashboard</h2>
+    <p class="muted">Inzichten op basis van huidige Drifty-data.</p>
+    <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+      <canvas id="chartPoints" height="180"></canvas>
+      <canvas id="chartIncidents" height="180"></canvas>
+      <canvas id="chartSupport" height="180"></canvas>
+    </div>`;
+
+  setTimeout(drawAnalyticsCharts, 100);
+}
+
+function drawAnalyticsCharts() {
+  // 🧮 Data voorbereiden
+  const users = STORE.users || [];
+  const incidents = STORE.incidents || [];
+  const support = STORE.support || [];
+
+  const ctx1 = document.getElementById("chartPoints");
+  const ctx2 = document.getElementById("chartIncidents");
+  const ctx3 = document.getElementById("chartSupport");
+
+  // 🎯 Chart 1 — Puntverdeling
+  if (ctx1) new Chart(ctx1, {
+    type: "pie",
+    data: {
+      labels: users.map(u => u.name),
+      datasets: [{
+        label: "Punten",
+        data: users.map(u => u.points || 0),
+        backgroundColor: ["#1e90ff","#36a2eb","#4bc0c0","#ff6384","#ffcd56","#9966ff"]
+      }]
+    },
+    options: { plugins: { legend: { position: "bottom" }, title: { display: true, text: "💰 Puntverdeling per gebruiker" } } }
+  });
+
+  // ⚓ Chart 2 — Incidenten per boot
+  const boats = [...new Set(incidents.map(i => i.boat))];
+  const counts = boats.map(b => incidents.filter(i => i.boat === b).length);
+  if (ctx2) new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: boats,
+      datasets: [{
+        label: "Aantal incidenten",
+        data: counts,
+        backgroundColor: "#ffcd56"
+      }]
+    },
+    options: { plugins: { title: { display: true, text: "🚨 Incidenten per boot" } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // 🛟 Chart 3 — Supportstatus
+  const done = support.filter(s => s.done).length;
+  const open = support.filter(s => !s.done).length;
+  if (ctx3) new Chart(ctx3, {
+    type: "doughnut",
+    data: {
+      labels: ["Afgehandeld","Open"],
+      datasets: [{
+        data: [done, open],
+        backgroundColor: ["#4bc0c0","#ff6384"]
+      }]
+    },
+    options: { plugins: { title: { display: true, text: "🛟 Supportmeldingen status" } } }
+  });
+}
+
+// ✨ Voeg de analytics-tab toe aan je bestaande admin-tab logica
+const oldRenderAdminTab = window.renderAdminTab;
+window.renderAdminTab = function(tab) {
+  if (tab === "analytics") return renderAnalyticsTab();
+  oldRenderAdminTab(tab);
+};
+
+// Voeg een nieuwe tab-knop toe (automatisch, als nog niet aanwezig)
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = document.querySelector(".tabs");
+  if (tabs && !document.getElementById("tab-analytics")) {
+    const btn = document.createElement("button");
+    btn.id = "tab-analytics";
+    btn.className = "tab-btn";
+    btn.textContent = "📊 Analytics";
+    btn.onclick = () => switchAdminTab("analytics");
+    tabs.appendChild(btn);
+  }
+});
+</script>
+<!-- ===================== EINDE DRIFTY ANALYTICS TAB ===================== -->
+
+<!-- ===== DRIFTY HOTFIX BUNDLE (plaats dit als LAATSTE <script> in de pagina) ===== -->
+<script>
+(function () {
+  // ---------- Safe helpers ----------
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const ensure = (cond, msg) => { if(!cond) console.warn('DRIFTY_HOTFIX:', msg); };
+
+  // Globale show helper fallback
+  if (typeof window.showScreen !== 'function') {
+    window.showScreen = function(id) {
+      const screens = $$('.screen');
+      screens.forEach(s => s.classList.remove('active'));
+      const el = document.getElementById(id);
+      if (el) el.classList.add('active');
+    };
+  }
+
+  // ---------- Dedup Admin screen ----------
+  const firstAdmin = document.getElementById('screen-admin');        // de originele Admin
+  const dupAdmin   = document.querySelector('section#screen-admin.screen.hidden'); // late admin section
+  if (firstAdmin && dupAdmin) {
+    // Verplaats inhoud van de late admin sectie naar een subpanel in de eerste admin
+    const adv = document.createElement('div');
+    adv.id = 'screen-admin-adv';
+    adv.className = 'card';
+    adv.innerHTML = `<h2>🧩 Uitgebreid Admin Dashboard</h2>`;
+    // append tabs container als bestaat
+    const tabs = dupAdmin.querySelector('.tabs');
+    const content = dupAdmin.querySelector('#admin-content');
+    if (tabs) adv.appendChild(tabs);
+    if (content) adv.appendChild(content);
+    firstAdmin.appendChild(adv);
+    // verwijder duplicaat om id-conflict te vermijden
+    dupAdmin.remove();
+  }
+
+  // ---------- Safe notify ----------
+  if (typeof window.notify !== 'function') {
+    window.notify = (m) => console.log('🔔', m);
+  }
+
+  // ---------- Patch renderHome (list NPE + idempotente knoppen) ----------
+  (function patchRenderHome(){
+    const orig = window.renderHome;
+    window.renderHome = function() {
+      if (typeof orig === 'function') orig.apply(this, arguments);
+
+      // Idempotent topbar knoppen (als een module het nog niet deed)
+      const topBar = document.querySelector('#screen-home .row:nth-child(1) > .row');
+      if (topBar) {
+        const ensureBtn = (id, label, onClick) => {
+          if (!document.getElementById(id)) {
+            const b = document.createElement('button');
+            b.id = id; b.className = 'small'; b.textContent = label; b.onclick = onClick;
+            // positioneer redelijk voor Admin
+            const idx = Math.min(topBar.children.length, 3);
+            topBar.insertBefore(b, topBar.children[idx] || null);
+          }
+        };
+        // Voorbeeld: shop knop die naar profiel gaat
+        ensureBtn('btn-shop', '🛍️ Webshop', ()=>window.openProfile && openProfile());
+      }
+
+      // Fix: lijst renderen (Module 1 wijzigde renderHome maar vergat 'list')
+      const list = document.getElementById('boats-list');
+      if (list && !list.hasChildNodes()) {
+        (STORE.boats||[]).forEach(b=>{
+          const c=document.createElement('div'); c.className='card row'; c.style.justifyContent='space-between';
+          c.innerHTML = `<div><strong>${b.name}</strong> <span class="muted">(${b.status})</span></div>
+                         <button class="small" onclick="openBoat(${b.id})">Open</button>`;
+          list.appendChild(c);
+        });
+      }
+    };
+  })();
+
+  // ---------- Profiel render shim (voor modules die renderProfile hooken) ----------
+  (function profileShim(){
+    // OpenProfile rendert reeds; we bieden renderProfile() aan als "core + extensies".
+    const coreRender = function() {
+      // Hergebruik bestaande openProfile om basisonderdelen te vullen
+      if (typeof window.openProfile === 'function') window.openProfile();
+      // Zorg dat wallet container bestaat voor modules die erin schrijven
+      if (!document.getElementById('wallet-list')) {
+        // alleen toevoegen als profiel zichtbaar is
+        const p = document.getElementById('screen-profile');
+        if (p) {
+          const walletDiv = document.createElement('div');
+          walletDiv.className = 'card';
+          walletDiv.innerHTML = `<h2>💰 Drifty Wallet</h2><div id="wallet-list"></div>`;
+          p.appendChild(walletDiv);
+        }
+      }
+      // Crew / Support placeholders (idempotent)
+      const p = document.getElementById('screen-profile');
+      if (p && !document.getElementById('crew-area')) {
+        const crew = document.createElement('div');
+        crew.id = 'crew-area'; crew.className='card';
+        crew.innerHTML = `<h2>👥 Crew</h2><p class="muted">Nog geen crew. <button class="small" onclick="createCrew && createCrew()">Maak er een</button></p>`;
+        p.appendChild(crew);
+      }
+      if (p && !document.getElementById('support-area')) {
+        const sup = document.createElement('div');
+        sup.id = 'support-area'; sup.className='card';
+        sup.innerHTML = `<h2>🛟 Support</h2>
+          <textarea id="support-txt" placeholder="Beschrijf je probleem..." style="width:100%;height:60px"></textarea>
+          <button class="small" onclick="sendSupport && sendSupport()">Versturen</button>`;
+        p.appendChild(sup);
+      }
+    };
+
+    // Expose als window.renderProfile voor modules 11/13/15 die dit verwachten
+    window.renderProfile = function() { coreRender(); };
+  })();
+
+  // ---------- Shop: zorg dat #shop-list aanwezig is ----------
+  (function patchShop(){
+    const orig = window.renderShop;
+    window.renderShop = function() {
+      if (typeof orig === 'function') orig.apply(this, arguments);
+      const host = document.getElementById('shop');
+      if (host && !document.getElementById('shop-list')) {
+        const wrap = document.createElement('div');
+        wrap.id = 'shop-list';
+        wrap.className = 'card';
+        wrap.innerHTML = `<div class="muted">Partnerdeals & extra producten</div>`;
+        host.appendChild(wrap);
+      }
+    };
+  })();
+
+  // ---------- Tours: geef elke rij een id="tour-<id>" zodat Module 12 kan injecteren ----------
+  (function patchTours(){
+    const orig = window.renderTours;
+    if (typeof orig === 'function') {
+      window.renderTours = function() {
+        orig.apply(this, arguments);
+        // Geef IDs aan tour cards als die nog ontbreken
+        const box = document.getElementById('tour-list');
+        if (!box) return;
+        (STORE.tours||[]).forEach(t=>{
+          // zoek een card zonder id met unieke content
+          const rows = $$('.card', box);
+          const found = rows.find(r => r.innerText.includes(t.title) && !r.id);
+          if (found) found.id = `tour-${t.id}`;
+        });
+      }
+    }
+  })();
+
+  // ---------- DRIFTY_ADMIN helper object (gebruikt door Admin Dashboard) ----------
+  window.DRIFTY_ADMIN = window.DRIFTY_ADMIN || {
+    adjustPoints(name, delta) {
+      const u = (STORE.users||[]).find(x=>x.name===name);
+      if(!u) return alert('Gebruiker niet gevonden');
+      u.points = Math.max(0, +( (u.points||0) + delta ).toFixed(2));
+      if (typeof logTransaction === 'function') logTransaction(name, delta, 'Admin aanpassing');
+      save(); notify(`🧮 ${name}: ${delta>0?'+':''}${delta} pt (nu ${u.points.toFixed(2)})`);
+      // refresh UI
+      if (typeof renderAdminUsers === 'function') renderAdminUsers();
+      if (typeof renderPurchases === 'function' && currentUser?.name===name) renderPurchases();
+    },
+    removeUser(name) {
+      if (!confirm(`Verwijder gebruiker ${name}?`)) return;
+      STORE.users = (STORE.users||[]).filter(u=>u.name!==name);
+      // cascade: verwijder uit reserveringen
+      (STORE.reservations||[]).forEach(r=> r.users = (r.users||[]).filter(n=>n!==name));
+      save(); notify(`🗑️ Gebruiker verwijderd: ${name}`);
+      if (typeof renderAdminUsers === 'function') renderAdminUsers();
+    },
+    markSupportDone(id) {
+      const s = (STORE.support||[]).find(x=>x.id===id);
+      if (!s) return;
+      s.done = true; save(); notify('🛟 Support gemarkeerd als afgehandeld');
+      if (typeof renderSupportAdmin === 'function') renderSupportAdmin();
+    },
+    closeIncident(id) {
+      const i = (STORE.incidents||[]).find(x=>x.id===id);
+      if (!i) return;
+      i.status = 'gesloten'; save(); notify('🚨 Incident gesloten');
+      const box = document.getElementById('support-list');
+      if (box && typeof renderSupportAdmin === 'function') renderSupportAdmin();
+    },
+    toggleWeatherGate() {
+      STORE.weatherGate = !STORE.weatherGate;
+      // Houd compatibel met bestaande weather.code
+      STORE.weather.code = STORE.weatherGate ? 'red' : 'green';
+      save(); notify(`🌦️ Weer-gate: ${STORE.weatherGate ? '🔴 Actief' : '🟢 Uit'}`);
+      const pill = document.getElementById('weather-state');
+      if (pill) pill.textContent = 'Huidig: ' + STORE.weather.code;
+    },
+    exportData() {
+      const blob = new Blob([JSON.stringify(STORE,null,2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `drifty-export-${new Date().toISOString().slice(0,19)}.json`;
+      a.click();
+    },
+    resetSimulation() {
+      if (!confirm('Weet je zeker? Alle lokale data worden gewist.')) return;
+      localStorage.clear();
+      location.reload();
+    }
+  };
+
+  // ---------- Harmoniseer openAdmin ----------
+  (function harmonizeOpenAdmin(){
+    const orig = window.openAdmin;
+    window.openAdmin = function() {
+      if (!isAdmin || !isAdmin()) return alert('Alleen admin (drifty)');
+      // Toon basis admin screen
+      if (typeof orig === 'function') orig.apply(this, arguments);
+
+      // Render optionele panelen als functies bestaan
+      if (typeof renderAdminUsers === 'function') renderAdminUsers();
+      if (typeof renderAdminRes === 'function') renderAdminRes();
+      if (typeof renderRolesAdmin === 'function') renderRolesAdmin();
+      if (typeof renderBoatsAdmin === 'function') renderBoatsAdmin();
+      if (typeof renderSupportAdmin === 'function') renderSupportAdmin();
+
+      // Activeer Admin scherm
+      show('screen-admin'); // bestaande show helper
+    };
+  })();
+
+  // ---------- Fail-safe: activeer fixes na DOM ready ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    // Forceer consistente home-state; knoppen en lijsten updaten
+    if (typeof renderHome === 'function' && $('#screen-home')) {
+      try { renderHome(); } catch(e){ console.warn('renderHome fix error', e); }
+    }
+  });
+
+})();
+</script>
+<!-- ===== EINDE DRIFTY HOTFIX BUNDLE ===== -->
+  
+  
+</body>
+</html>
+    
   </body>
+  
 </html>
