@@ -2515,6 +2515,14 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- ===== EINDE DRIFTY HOTFIX BUNDLE ===== -->
   
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  const SUPABASE_URL = 'https://jouwproject.supabase.co';
+  const SUPABASE_ANON_KEY = 'ey...';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabase = supabase;
+</script>
+
   
 </body>
 </html>
