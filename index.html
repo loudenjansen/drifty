@@ -2523,6 +2523,17 @@ document.addEventListener("DOMContentLoaded", () => {
   window.supabase = supabase;
 </script>
 
+  <script type="module">
+if (window.supa){
+  window.supa
+    .channel('res-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
+      if (typeof renderResListFromDB === 'function') renderResListFromDB()
+    })
+    .subscribe()
+}
+</script>
+
   
 </body>
 </html>
