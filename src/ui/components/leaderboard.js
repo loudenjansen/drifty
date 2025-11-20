@@ -1,19 +1,20 @@
 diff --git a/src/ui/components/leaderboard.js b/src/ui/components/leaderboard.js
-index 44028ba9d64cc2b1f02198f46b30ef62c3c303ac..95da7614342552ec47a44983fc88c397c275f7a5 100644
+index 44028ba9d64cc2b1f02198f46b30ef62c3c303ac..78d48b8f9031e2438a1c7dd6dfe36ce22baf407c 100644
 --- a/src/ui/components/leaderboard.js
 +++ b/src/ui/components/leaderboard.js
-@@ -1,15 +1,53 @@
+@@ -1,15 +1,54 @@
  import { STORE } from '../../state/store.js'
 +import { navigate } from '../router.js'
 +
 +function renderNav(container){
 +  const nav = document.createElement('div')
 +  nav.className = 'bottom-nav'
++  const isAdmin = !!STORE.currentUser?.isAdmin
 +  nav.innerHTML = `
 +    <button data-nav="home">🏠 Home</button>
 +    <button data-nav="profile">👤 Profiel</button>
 +    <button class="active" data-nav="leader">🏆 Leaderboard</button>
-+    <button data-nav="admin">🛠️ Admin</button>
++    ${isAdmin ? '<button data-nav="admin">🛠️ Admin</button>' : ''}
 +  `
 +  nav.querySelectorAll('button').forEach(btn=> btn.onclick = () => navigate(btn.dataset.nav))
 +  container.appendChild(nav)
@@ -60,6 +61,7 @@ index 44028ba9d64cc2b1f02198f46b30ef62c3c303ac..95da7614342552ec47a44983fc88c397
 +  renderNav(page)
    return page
  }
+
 
 
 
