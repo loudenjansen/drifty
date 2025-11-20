@@ -38,7 +38,8 @@ h1 { font-size: 28px; margin: 8px 0; letter-spacing: -0.02em; }
 h2 { font-size: 18px; margin: 12px 0 8px; letter-spacing: -0.01em; }
 p { line-height: 1.6; }
 
-.screen { display: block; animation: fadeIn 260ms ease; }
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn 260ms ease; }
 
 button {
   background: linear-gradient(135deg, var(--blue), var(--green));
