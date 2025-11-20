@@ -1,8 +1,8 @@
 diff --git a/src/ui/components/reservationList.js b/src/ui/components/reservationList.js
-index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1b42f44d8 100644
+index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6daea713f5b91e4fb3aaec7e737cfacece68597a 100644
 --- a/src/ui/components/reservationList.js
 +++ b/src/ui/components/reservationList.js
-@@ -1,91 +1,131 @@
+@@ -1,91 +1,162 @@
  import { STORE, save } from '../../state/store.js'
  import { hoursBetween, toISODateHour, timesOverlap } from '../../lib/utils.js'
  import { navigate } from '../router.js'
@@ -31,13 +31,36 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1
 -    <div class="row" style="justify-content:space-between">
 -      <h1 id="b-name">${b?.name||'Boot'}</h1>
 -      <button class="small" id="back">Terug</button>
-+    <div class="row" style="justify-content:space-between; align-items:center">
-+      <div>
-+        <div class="pill">Boot details</div>
-+        <h1 id="b-name">${b?.name||'Boot'}</h1>
-+        <div class="muted">Status: <span id="b-status">${b?.status||'—'}</span></div>
++    <div class="hero fade-card">
++      <div class="row" style="justify-content:space-between; align-items:flex-start">
++        <div>
++          <div class="pill">Boot details</div>
++          <h1 id="b-name">${b?.name||'Boot'}</h1>
++          <div class="chip-row" style="margin:8px 0">
++            <span class="pill ${b?.status==='available'?'green':''}" id="b-status">${b?.status||'—'}</span>
++            <span class="pill ghost">🚦 Weer: ${STORE.weather.code}</span>
++          </div>
++          <p class="muted">Reserveer je uurslot en houd de crew in sync.</p>
++        </div>
++        <button class="ghost small" id="back">← Terug</button>
 +      </div>
-+      <button class="secondary small" id="back">← Terug</button>
++      <div class="stat-grid">
++        <div class="stat">
++          <div class="label">Actieve slots</div>
++          <div class="value">${STORE.reservations.filter(r=>r.boatId===STORE.currentBoatId).length}</div>
++          <div class="muted">Alle geplande blokken.</div>
++        </div>
++        <div class="stat">
++          <div class="label">Crew</div>
++          <div class="value">${(STORE.currentUser?.name||'Nog niet') }</div>
++          <div class="muted">Wordt toegevoegd bij deelname.</div>
++        </div>
++        <div class="stat">
++          <div class="label">Weer-gate</div>
++          <div class="value">${STORE.weather.code}</div>
++          <div class="muted">Altijd bijwerken voor vertrek.</div>
++        </div>
++      </div>
      </div>
 -    <p class="muted">Per uur reserveren. Status: <span id="b-status">${b?.status||'—'}</span></p>
  
@@ -49,7 +72,8 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1
 +    <div class="layout-split">
 +      <div class="card fade-card">
 +        <h2>Reserveer uurslot</h2>
-+        <div class="row" style="align-items:flex-start">
++        <div class="muted">Plan een blok of sluit aan bij een bestaand slot.</div>
++        <div class="row" style="align-items:flex-start; margin-top:10px">
 +          <div style="flex:1; min-width:200px">
 +            <label>Datum</label><input id="slot-date" type="date"/>
 +          </div>
@@ -60,25 +84,33 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1
 +            <label>Duur (uren)</label><select id="slot-dur"></select>
 +          </div>
 +        </div>
-+        <div class="row" style="justify-content:flex-start; gap:12px; margin-top:6px">
++        <div class="row" style="justify-content:flex-start; gap:12px; margin-top:10px">
 +          <button id="reserve">Reserveer (onder voorbehoud)</button>
 +          <button class="secondary" id="join-exact">Join exact slot</button>
 +        </div>
++        <div class="msg" style="margin-top:10px">Betaal alleen bij activeren. Je crew wordt automatisch gekoppeld aan dit slot.</div>
 +      </div>
  
 -      <div class="row">
 -        <button id="reserve">Reserveer (onder voorbehoud)</button>
 -        <button class="small" id="join-exact">Join exact slot</button>
-+      <div class="card">
++      <div class="card strong">
 +        <h2>Boot info</h2>
-+        <div class="muted">Controleer weersituatie en slots voor je team.</div>
-+        <div class="pill" style="margin-top:10px">🚦 Weer: ${STORE.weather.code}</div>
++        <p class="muted">Controleer weersituatie en slotdetails voor je team.</p>
++        <div class="list-stack" style="margin-top:6px">
++          <div class="pill ghost">🚦 Gate: ${STORE.weather.code}</div>
++          <div class="pill">⚓ Status: ${b?.status||'—'}</div>
++          <div class="pill green">🌊 Crew ready</div>
++        </div>
++        <div class="divider"></div>
++        <div class="ghost-tile">Tip: houd de vloot in de gaten en sluit aan bij slots van teammates.</div>
        </div>
      </div>
  
 -    <h2>Uursloten</h2>
+-    <div id="res-list"></div>
 +    <div class="section-title">📅 Uursloten</div>
-     <div id="res-list"></div>
++    <div id="res-list" class="list-stack"></div>
    `
  
    page.querySelector('#back').onclick = () => navigate('home')
@@ -133,7 +165,8 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1
    if(!list.length){ box.innerHTML='<div class="muted">Nog geen reserveringen</div>'; return }
    list.forEach(r=>{
      const perPerson = (r.total/Math.max(1,r.users.length))
-     const row = document.createElement('div'); row.className='card'
+-    const row = document.createElement('div'); row.className='card'
++    const row = document.createElement('div'); row.className='card strong'
      row.innerHTML = `
 -      <div><strong>${new Date(r.start).toLocaleString()}</strong> → ${new Date(r.end).toLocaleString()}</div>
 -      <div class="muted">Deelnemers: ${r.users.join(', ')||'—'}</div>
@@ -150,5 +183,6 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6332f6d0006f9466136d65c5f87749c1
      box.appendChild(row)
    })
  }
+
 
 
