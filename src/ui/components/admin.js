@@ -1,4 +1,5 @@
 import { STORE, save } from '../../state/store.js'
+import { navigate } from '../router.js'
 
 export function renderAdmin(){
   const page = document.createElement('div')
@@ -20,6 +21,7 @@ export function renderAdmin(){
   `
 
   page.querySelector('#back').onclick = () => history.back()
+  page.querySelector('#back').onclick = () => navigate('home')
   page.querySelector('#save-weather').onclick = () => {
     STORE.weather.code = page.querySelector('#weather').value
     save(); page.querySelector('#weather-state').textContent = 'Huidig: ' + STORE.weather.code
