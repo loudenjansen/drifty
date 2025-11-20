@@ -1,4 +1,5 @@
 import { STORE, save } from '../../state/store.js'
+import { navigate } from '../router.js'
 
 export function renderProfile(){
   const page = document.createElement('div')
@@ -23,6 +24,7 @@ export function renderProfile(){
     </div>
   `
   page.querySelector('#back').onclick = () => history.back()
+  page.querySelector('#back').onclick = () => navigate('home')
   page.querySelectorAll('[data-add]').forEach(btn=> btn.onclick = () => { const n=+btn.dataset.add; STORE.currentUser.points=(STORE.currentUser.points||0)+n; save(); update() })
   page.querySelector('#reset').onclick = () => { if(confirm('Weet je zeker dat je wilt resetten?')){ localStorage.clear(); location.reload() } }
 
