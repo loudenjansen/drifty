@@ -1,8 +1,8 @@
 diff --git a/src/ui/components/reservationList.js b/src/ui/components/reservationList.js
-index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6daea713f5b91e4fb3aaec7e737cfacece68597a 100644
+index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..734804b4a70443e493bb00d7c9451809402c1d7d 100644
 --- a/src/ui/components/reservationList.js
 +++ b/src/ui/components/reservationList.js
-@@ -1,91 +1,162 @@
+@@ -1,91 +1,163 @@
  import { STORE, save } from '../../state/store.js'
  import { hoursBetween, toISODateHour, timesOverlap } from '../../lib/utils.js'
  import { navigate } from '../router.js'
@@ -10,11 +10,12 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6daea713f5b91e4fb3aaec7e737cface
 +function renderNav(container){
 +  const nav = document.createElement('div')
 +  nav.className = 'bottom-nav'
++  const isAdmin = !!STORE.currentUser?.isAdmin
 +  nav.innerHTML = `
 +    <button data-nav="home">🏠 Home</button>
 +    <button data-nav="profile">👤 Profiel</button>
 +    <button data-nav="leader">🏆 Leaderboard</button>
-+    <button data-nav="admin">🛠️ Admin</button>
++    ${isAdmin ? '<button data-nav="admin">🛠️ Admin</button>' : ''}
 +  `
 +  nav.querySelectorAll('button').forEach(btn=>{
 +    if(btn.dataset.nav==='home') btn.classList.add('active')
@@ -183,6 +184,7 @@ index 7f56a64f481a731cf5b87ed114814c1885ca9bb6..6daea713f5b91e4fb3aaec7e737cface
      box.appendChild(row)
    })
  }
+
 
 
 
