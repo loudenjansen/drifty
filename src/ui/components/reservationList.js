@@ -23,19 +23,43 @@ export function renderBoat(){
   const page = document.createElement('div')
   page.className = 'screen active'
   page.innerHTML = `
-    <div class="row" style="justify-content:space-between; align-items:center">
-      <div>
-        <div class="pill">Boot details</div>
-        <h1 id="b-name">${b?.name||'Boot'}</h1>
-        <div class="muted">Status: <span id="b-status">${b?.status||'—'}</span></div>
+    <div class="hero fade-card">
+      <div class="row" style="justify-content:space-between; align-items:flex-start">
+        <div>
+          <div class="pill">Boot details</div>
+          <h1 id="b-name">${b?.name||'Boot'}</h1>
+          <div class="chip-row" style="margin:8px 0">
+            <span class="pill ${b?.status==='available'?'green':''}" id="b-status">${b?.status||'—'}</span>
+            <span class="pill ghost">🚦 Weer: ${STORE.weather.code}</span>
+          </div>
+          <p class="muted">Reserveer je uurslot en houd de crew in sync.</p>
+        </div>
+        <button class="ghost small" id="back">← Terug</button>
       </div>
-      <button class="secondary small" id="back">← Terug</button>
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="label">Actieve slots</div>
+          <div class="value">${STORE.reservations.filter(r=>r.boatId===STORE.currentBoatId).length}</div>
+          <div class="muted">Alle geplande blokken.</div>
+        </div>
+        <div class="stat">
+          <div class="label">Crew</div>
+          <div class="value">${(STORE.currentUser?.name||'Nog niet') }</div>
+          <div class="muted">Wordt toegevoegd bij deelname.</div>
+        </div>
+        <div class="stat">
+          <div class="label">Weer-gate</div>
+          <div class="value">${STORE.weather.code}</div>
+          <div class="muted">Altijd bijwerken voor vertrek.</div>
+        </div>
+      </div>
     </div>
 
     <div class="layout-split">
       <div class="card fade-card">
         <h2>Reserveer uurslot</h2>
-        <div class="row" style="align-items:flex-start">
+        <div class="muted">Plan een blok of sluit aan bij een bestaand slot.</div>
+        <div class="row" style="align-items:flex-start; margin-top:10px">
           <div style="flex:1; min-width:200px">
             <label>Datum</label><input id="slot-date" type="date"/>
           </div>
@@ -46,21 +70,28 @@ export function renderBoat(){
             <label>Duur (uren)</label><select id="slot-dur"></select>
           </div>
         </div>
-        <div class="row" style="justify-content:flex-start; gap:12px; margin-top:6px">
+        <div class="row" style="justify-content:flex-start; gap:12px; margin-top:10px">
           <button id="reserve">Reserveer (onder voorbehoud)</button>
           <button class="secondary" id="join-exact">Join exact slot</button>
         </div>
+        <div class="msg" style="margin-top:10px">Betaal alleen bij activeren. Je crew wordt automatisch gekoppeld aan dit slot.</div>
       </div>
 
-      <div class="card">
+      <div class="card strong">
         <h2>Boot info</h2>
-        <div class="muted">Controleer weersituatie en slots voor je team.</div>
-        <div class="pill" style="margin-top:10px">🚦 Weer: ${STORE.weather.code}</div>
+        <p class="muted">Controleer weersituatie en slotdetails voor je team.</p>
+        <div class="list-stack" style="margin-top:6px">
+          <div class="pill ghost">🚦 Gate: ${STORE.weather.code}</div>
+          <div class="pill">⚓ Status: ${b?.status||'—'}</div>
+          <div class="pill green">🌊 Crew ready</div>
+        </div>
+        <div class="divider"></div>
+        <div class="ghost-tile">Tip: houd de vloot in de gaten en sluit aan bij slots van teammates.</div>
       </div>
     </div>
 
     <div class="section-title">📅 Uursloten</div>
-    <div id="res-list"></div>
+    <div id="res-list" class="list-stack"></div>
   `
 
   page.querySelector('#back').onclick = () => navigate('home')
@@ -115,7 +146,7 @@ function renderResList(page){
   if(!list.length){ box.innerHTML='<div class="muted">Nog geen reserveringen</div>'; return }
   list.forEach(r=>{
     const perPerson = (r.total/Math.max(1,r.users.length))
-    const row = document.createElement('div'); row.className='card'
+    const row = document.createElement('div'); row.className='card strong'
     row.innerHTML = `
       <div class="row" style="justify-content:space-between; align-items:flex-start">
         <div>
