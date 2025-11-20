@@ -1,4 +1,5 @@
 import { STORE } from '../../state/store.js'
+import { navigate } from '../router.js'
 
 export function renderLeaderboard(){
   const page = document.createElement('div')
@@ -8,6 +9,7 @@ export function renderLeaderboard(){
     <div id="lead-list" class="card"></div>
   `
   page.querySelector('#back').onclick = () => history.back()
+  page.querySelector('#back').onclick = () => navigate('home')
   const box = page.querySelector('#lead-list')
   const sorted = [...STORE.users].sort((a,b)=>(b.points||0)-(a.points||0))
   box.innerHTML = sorted.map((u,i)=> `<div class="row" style="justify-content:space-between"><div>${i+1}. ${u.name}</div><div class="muted">${(u.points||0).toFixed(2)} pt</div></div>`).join('') || '<div class="muted">Nog geen spelers</div>'
