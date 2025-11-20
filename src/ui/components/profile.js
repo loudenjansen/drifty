@@ -4,11 +4,12 @@ import { navigate } from '../router.js'
 function renderNav(container){
   const nav = document.createElement('div')
   nav.className = 'bottom-nav'
+  const isAdmin = !!STORE.currentUser?.isAdmin
   nav.innerHTML = `
     <button data-nav="home">🏠 Home</button>
     <button class="active" data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>
-    <button data-nav="admin">🛠️ Admin</button>
+    ${isAdmin ? '<button data-nav="admin">🛠️ Admin</button>' : ''}
   `
   nav.querySelectorAll('button').forEach(btn=> btn.onclick = () => navigate(btn.dataset.nav))
   container.appendChild(nav)

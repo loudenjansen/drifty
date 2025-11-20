@@ -23,6 +23,13 @@ export function initStore(){
   }
 }
 
+export function ensureAdminFlag(user){
+  if (!user) return false
+  const isAdmin = user.name?.toLowerCase() === 'drifty'
+  user.isAdmin = !!isAdmin
+  return user.isAdmin
+}
+
 export function save(){
   storage.saveAll({ ...STORE, currentUser: STORE.currentUser, currentBoatId: STORE.currentBoatId })
   if (STORE.currentUser) storage.saveUserName(STORE.currentUser.name)
@@ -32,5 +39,10 @@ export function loadFromStorage(){
   const data = storage.loadAll()
   if (Object.keys(data).length){ Object.assign(STORE, data) }
   const cu = storage.loadUserName()
-  if (cu) STORE.currentUser = STORE.users.find(u => u.name === cu) || null
+  if (STORE.users?.length){ STORE.users.forEach(ensureAdminFlag) }
+  if (cu){
+    const found = STORE.users.find(u => u.name === cu)
+    if (found) STORE.currentUser = found
+  }
+  if (STORE.currentUser) ensureAdminFlag(STORE.currentUser)
 }
