@@ -1,8 +1,8 @@
 diff --git a/src/ui/components/auth.js b/src/ui/components/auth.js
-index 6a67aa34d589c07196923e4d6b3f3351e18e1689..502c4a22d410637be9de0ef8b6f02d9b37d1aaec 100644
+index 6a67aa34d589c07196923e4d6b3f3351e18e1689..8ca109e48d4a37bb9ce939cddc7613e401c06f4b 100644
 --- a/src/ui/components/auth.js
 +++ b/src/ui/components/auth.js
-@@ -1,20 +1,31 @@
+@@ -1,20 +1,44 @@
  import { STORE, save } from '../../state/store.js'
  import { navigate } from '../router.js'
  
@@ -17,15 +17,28 @@ index 6a67aa34d589c07196923e4d6b3f3351e18e1689..502c4a22d410637be9de0ef8b6f02d9b
 +      <div class="pill">🚤 DRIFTY Access</div>
 +      <h1>Welkom terug</h1>
 +      <p class="muted">Log in om je boten, reserveringen en punten te beheren. Admin login: <strong class="muted">drifty</strong>.</p>
-+      <div class="card">
++
++      <div class="card strong" style="margin-top:16px">
 +        <label for="login-name">Jouw naam</label>
 +        <input id="login-name" placeholder="Voer je naam in (admin: drifty)"/>
-+        <div class="row" style="justify-content:space-between; align-items:center">
++        <div class="row" style="justify-content:space-between; align-items:center; margin-top:6px">
 +          <div class="muted">Je account wordt lokaal opgeslagen.</div>
 +          <button id="login-btn">Start sessie</button>
 +        </div>
 +      </div>
-+      <div class="muted" style="margin-top:8px">Bonus: nieuwe spelers krijgen automatisch 5 punten.</div>
++
++      <div class="stat-grid" style="margin-top:12px">
++        <div class="stat">
++          <div class="label">Nieuw account</div>
++          <div class="value">+5 punten</div>
++          <div class="muted">Je start direct met een bonus.</div>
++        </div>
++        <div class="stat">
++          <div class="label">Beveiligde opslag</div>
++          <div class="value">Lokaal</div>
++          <div class="muted">Gegevens blijven op dit device.</div>
++        </div>
++      </div>
 +    </div>
    `
    wrap.querySelector('#login-btn').onclick = () => {
@@ -37,5 +50,6 @@ index 6a67aa34d589c07196923e4d6b3f3351e18e1689..502c4a22d410637be9de0ef8b6f02d9b
    }
    return wrap
  }
+
 
 
