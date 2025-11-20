@@ -1,19 +1,20 @@
 diff --git a/src/ui/components/map.js b/src/ui/components/map.js
-index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333eec99925f 100644
+index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..13f99c9a44be1583a458872f21b9613b0ab1f407 100644
 --- a/src/ui/components/map.js
 +++ b/src/ui/components/map.js
-@@ -1,50 +1,146 @@
+@@ -1,50 +1,150 @@
  import { STORE } from '../../state/store.js'
  import { navigate } from '../router.js'
  
 +function renderNav(container){
 +  const nav = document.createElement('div')
 +  nav.className = 'bottom-nav'
++  const isAdmin = !!STORE.currentUser?.isAdmin
 +  nav.innerHTML = `
 +    <button class="active" data-nav="home">🏠 Home</button>
 +    <button data-nav="profile">👤 Profiel</button>
 +    <button data-nav="leader">🏆 Leaderboard</button>
-+    <button data-nav="admin">🛠️ Admin</button>
++    ${isAdmin ? '<button data-nav="admin">🛠️ Admin</button>' : ''}
 +  `
 +  nav.querySelectorAll('button').forEach(btn=> btn.onclick = () => navigate(btn.dataset.nav))
 +  container.appendChild(nav)
@@ -23,6 +24,7 @@ index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333e
    const page = document.createElement('div')
    page.className = 'screen active'
 +  const username = STORE.currentUser?.name || 'Gast'
++  const isAdmin = !!STORE.currentUser?.isAdmin
    page.innerHTML = `
 -    <div class="row" style="justify-content:space-between">
 -      <h1>DRIFTY — Kaart & Boten</h1>
@@ -41,7 +43,7 @@ index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333e
 +        <div class="row" style="justify-content:flex-end; gap:8px">
 +          <button class="ghost small" id="btn-profile">👤 Profiel</button>
 +          <button class="ghost small" id="btn-lead">🏆 Leaderboard</button>
-+          <button class="ghost small" id="btn-admin">🛠️ Admin</button>
++          ${isAdmin ? '<button class="ghost small" id="btn-admin">🛠️ Admin</button>' : ''}
 +          <button class="link small" id="btn-logout">Uitloggen</button>
 +        </div>
 +      </div>
@@ -92,7 +94,7 @@ index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333e
 +        <div class="list-stack" style="margin-top:6px">
 +          <button class="ghost" id="btn-profile2">👤 Mijn profiel</button>
 +          <button class="ghost" id="btn-lead2">🏆 Ranglijst</button>
-+          <button class="ghost" id="btn-admin2">🛠️ Admin</button>
++          ${isAdmin ? '<button class="ghost" id="btn-admin2">🛠️ Admin</button>' : ''}
 +        </div>
 +        <div class="divider"></div>
 +        <div class="stat-grid">
@@ -116,11 +118,14 @@ index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333e
  
    page.querySelector('#btn-profile').onclick = () => navigate('profile')
    page.querySelector('#btn-lead').onclick = () => navigate('leader')
-   page.querySelector('#btn-admin').onclick = () => navigate('admin')
+-  page.querySelector('#btn-admin').onclick = () => navigate('admin')
++  const adminHeroBtn = page.querySelector('#btn-admin')
++  if (adminHeroBtn) adminHeroBtn.onclick = () => navigate('admin')
    page.querySelector('#btn-logout').onclick = () => { STORE.currentUser=null; localStorage.removeItem('drifty_user'); navigate('login') }
 +  page.querySelector('#btn-profile2').onclick = () => navigate('profile')
 +  page.querySelector('#btn-lead2').onclick = () => navigate('leader')
-+  page.querySelector('#btn-admin2').onclick = () => navigate('admin')
++  const adminQuickBtn = page.querySelector('#btn-admin2')
++  if (adminQuickBtn) adminQuickBtn.onclick = () => navigate('admin')
  
    const map = page.querySelector('#map')
    STORE.boats.forEach(b=>{
@@ -162,6 +167,7 @@ index 7b869411ee1dbeff6ebd6c3d0856a1e7ef703f22..45c4d3054edf969ade718462cd5d333e
 +  renderNav(page)
    return page
  }
+
 
 
 
