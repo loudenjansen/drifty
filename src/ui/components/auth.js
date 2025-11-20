@@ -1,9 +1,10 @@
 diff --git a/src/ui/components/auth.js b/src/ui/components/auth.js
-index 6a67aa34d589c07196923e4d6b3f3351e18e1689..8ca109e48d4a37bb9ce939cddc7613e401c06f4b 100644
+index 6a67aa34d589c07196923e4d6b3f3351e18e1689..11636da62d8ed4f811aef2f4157c0dc506498c05 100644
 --- a/src/ui/components/auth.js
 +++ b/src/ui/components/auth.js
-@@ -1,20 +1,44 @@
- import { STORE, save } from '../../state/store.js'
+@@ -1,20 +1,45 @@
+-import { STORE, save } from '../../state/store.js'
++import { STORE, ensureAdminFlag, save } from '../../state/store.js'
  import { navigate } from '../router.js'
  
  export function renderLogin(){
@@ -46,10 +47,12 @@ index 6a67aa34d589c07196923e4d6b3f3351e18e1689..8ca109e48d4a37bb9ce939cddc7613e4
      if(!name) return alert('Voer een naam in')
      let u = STORE.users.find(x=>x.name===name)
      if(!u){ u = { id:crypto.randomUUID?.() || name, name, points:5, purchases:[], badges:[] }; STORE.users.push(u) }
++    ensureAdminFlag(u)
      STORE.currentUser = u; save(); navigate('home')
    }
    return wrap
  }
+
 
 
 
