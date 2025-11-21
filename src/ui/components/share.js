@@ -59,6 +59,59 @@ function renderMyCodes(page){
   })
 }
 
+function joinReservation(res, page){
+  if(!res) return alert('Geen reservering gevonden')
+  const me = STORE.currentUser?.name
+  if(!me) return alert('Log in om mee te doen')
+  if(!res.shareCode) res.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
+  if(!res.users) res.users = []
+  if(!res.users.includes(me)){
+    res.users.push(me)
+    save()
+    renderMyCodes(page)
+    renderOpenShares(page)
+    showResult(page,res)
+    alert('Je bent toegevoegd. Kosten worden verdeeld!')
+  } else {
+    alert('Je stond al op deze reservering')
+  }
+}
+
+function renderOpenShares(page){
+  const box = page.querySelector('#share-open')
+  if(!box) return
+  box.innerHTML = ''
+  const me = STORE.currentUser?.name
+  const list = (STORE.reservations||[])
+    .filter(r => (r.users?.length)
+      && (!me || !r.users.includes(me)))
+    .sort((a,b)=> new Date(a.start)-new Date(b.start))
+
+  if(!list.length){ box.innerHTML = '<div class="muted">Nog geen gedeelde boten beschikbaar.</div>'; return }
+
+  list.forEach(r => {
+    const boat = STORE.boats.find(b=>b.id===r.boatId)
+    const per = (r.total/Math.max(1,r.users.length+1)).toFixed(3)
+    const card = document.createElement('div')
+    card.className = 'card strong'
+    card.innerHTML = `
+      <div class="row" style="justify-content:space-between; align-items:flex-start">
+        <div>
+          <div class="pill">${boat?.name||'Boot'}</div>
+          <div style="font-weight:700; margin-top:6px">${new Date(r.start).toLocaleString()}</div>
+          <div class="muted">Crew: ${r.users.join(', ')} • ~${per} pt p.p. (incl. jou)</div>
+        </div>
+        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
+          <span class="pill ghost">${r.shareCode}</span>
+          <button class="small" data-join>Inschrijven</button>
+        </div>
+      </div>
+    `
+    card.querySelector('[data-join]').onclick = () => joinReservation(r, page)
+    box.appendChild(card)
+  })
+}
+
 function showResult(page, res){
   const boat = STORE.boats.find(b=>b.id===res.boatId)
   const per = (res.total/Math.max(1,res.users.length)).toFixed(3)
@@ -96,6 +149,7 @@ function redeem(page){
   input.value = ''
   STORE.sharePrefillCode = null
   renderMyCodes(page)
+  renderOpenShares(page)
   showResult(page, res)
   alert('Je bent toegevoegd aan de reservering. Kosten worden gesplitst!')
 }
@@ -132,6 +186,12 @@ export function renderShare(){
         <div id="share-my" class="list-stack" style="margin-top:10px"></div>
       </div>
     </div>
+
+    <div class="section-title">🚤 Meld je aan bij bestaande boten</div>
+    <div class="card fade-card">
+      <p class="muted">Zie welke crews al een boot hebben gereserveerd en schrijf je direct in. Je punten worden automatisch gesplitst.</p>
+      <div id="share-open" class="list-stack" style="margin-top:10px"></div>
+    </div>
   `
 
   page.querySelector('#back').onclick = () => navigate('home')
@@ -144,6 +204,7 @@ export function renderShare(){
   }
 
   renderMyCodes(page)
+  renderOpenShares(page)
   renderNav(page)
   return page
 }
