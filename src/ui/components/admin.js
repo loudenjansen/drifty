@@ -6,6 +6,7 @@ function renderNav(container){
   nav.className = 'bottom-nav'
   nav.innerHTML = `
     <button data-nav="home">🏠 Home</button>
+    <button data-nav="share">🤝 Delen</button>
     <button data-nav="shop">🛒 Shop</button>
     <button data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>

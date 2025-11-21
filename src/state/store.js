@@ -13,6 +13,7 @@ export const STORE = {
   currentBoatId: null,
   shopItems: [],
   chores: [],
+  sharePrefillCode: null,
 }
 
 export function initStore(){

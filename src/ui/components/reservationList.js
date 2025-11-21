@@ -8,6 +8,7 @@ function renderNav(container){
   const isAdmin = !!STORE.currentUser?.isAdmin
   nav.innerHTML = `
     <button data-nav="home">🏠 Home</button>
+    <button data-nav="share">🤝 Delen</button>
     <button data-nav="shop">🛒 Shop</button>
     <button data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>
@@ -126,7 +127,12 @@ function reserveSlot(page){
   const clash = STORE.reservations.some(r=> r.boatId===STORE.currentBoatId && timesOverlap(start,end,r.start,r.end))
   if(clash) return alert('Overlappende reservering op deze boot')
   let r = STORE.reservations.find(x=>x.boatId===STORE.currentBoatId && x.start===start && x.end===end)
-  if(!r){ r = { id:crypto.randomUUID?.()||start, boatId:STORE.currentBoatId, start, end, users:[], status:'pending' }; calcCost(r); STORE.reservations.push(r) }
+  if(!r){
+    r = { id:crypto.randomUUID?.()||start, boatId:STORE.currentBoatId, start, end, users:[], status:'pending' }
+    calcCost(r)
+    r.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
+    STORE.reservations.push(r)
+  }
   const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
   save(); renderResList(page); alert('Onder voorbehoud. Betalen pas bij activeren.')
 }
@@ -138,6 +144,7 @@ function joinExact(page){
   const start = toISODateHour(date,hour), end = toISODateHour(date,hour+dur)
   let r = STORE.reservations.find(x=>x.boatId===STORE.currentBoatId && x.start===start && x.end===end)
   if(!r) return alert('Geen exact slot gevonden')
+  if(!r.shareCode) r.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
   const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
   save(); renderResList(page); alert('Je doet mee met dit slot')
 }
@@ -158,7 +165,12 @@ function renderResList(page){
         <div class="pill">${r.status}</div>
       </div>
       <div class="muted" style="margin-top:6px">Kosten: ${r.total.toFixed(3)} pt (~${perPerson.toFixed(3)} p.p.)</div>
+      <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
+        <span class="pill ghost">Deelcode: ${r.shareCode||'Nog niet gegenereerd'}</span>
+        <button class="small" data-share>Open deelpagina</button>
+      </div>
     `
+    row.querySelector('[data-share]').onclick = () => { STORE.currentBoatId = r.boatId; STORE.sharePrefillCode = r.shareCode; navigate('share') }
     box.appendChild(row)
   })
 }

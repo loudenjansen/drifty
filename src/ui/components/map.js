@@ -7,6 +7,7 @@ function renderNav(container){
   const isAdmin = !!STORE.currentUser?.isAdmin
   nav.innerHTML = `
     <button class="active" data-nav="home">🏠 Home</button>
+    <button data-nav="share">🤝 Delen</button>
     <button data-nav="shop">🛒 Shop</button>
     <button data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>
@@ -30,6 +31,7 @@ export function renderHome(){
           <p class="muted">Bekijk de vloot, claim je slot en blijf op koers. Weerstatus: <strong class="muted">${STORE.weather.code}</strong>.</p>
         </div>
         <div class="row" style="justify-content:flex-end; gap:8px">
+          <button class="ghost small" id="btn-share">🤝 Deel boot</button>
           <button class="ghost small" id="btn-shop">🛒 Shop</button>
           <button class="ghost small" id="btn-profile">👤 Profiel</button>
           <button class="ghost small" id="btn-lead">🏆 Leaderboard</button>
@@ -79,6 +81,7 @@ export function renderHome(){
           <span class="pill ghost">Korte navigatie</span>
         </div>
         <div class="list-stack" style="margin-top:6px">
+          <button class="ghost" id="btn-share2">🤝 Deel een boot</button>
           <button class="ghost" id="btn-shop2">🛒 Naar shop</button>
           <button class="ghost" id="btn-profile2">👤 Mijn profiel</button>
           <button class="ghost" id="btn-lead2">🏆 Ranglijst</button>
@@ -104,12 +107,14 @@ export function renderHome(){
     <div id="boats-list" class="list-stack"></div>
   `
 
+  page.querySelector('#btn-share').onclick = () => navigate('share')
   page.querySelector('#btn-shop').onclick = () => navigate('shop')
   page.querySelector('#btn-profile').onclick = () => navigate('profile')
   page.querySelector('#btn-lead').onclick = () => navigate('leader')
   const adminHeroBtn = page.querySelector('#btn-admin')
   if (adminHeroBtn) adminHeroBtn.onclick = () => navigate('admin')
   page.querySelector('#btn-logout').onclick = () => { STORE.currentUser=null; localStorage.removeItem('drifty_user'); navigate('login') }
+  page.querySelector('#btn-share2').onclick = () => navigate('share')
   page.querySelector('#btn-shop2').onclick = () => navigate('shop')
   page.querySelector('#btn-profile2').onclick = () => navigate('profile')
   page.querySelector('#btn-lead2').onclick = () => navigate('leader')
