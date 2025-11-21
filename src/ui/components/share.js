@@ -22,6 +22,7 @@ function ensureCodes(){
   let changed = false
   (STORE.reservations||[]).forEach(r => {
     if(!r.shareCode || !/^\d{4}$/.test(r.shareCode)){ r.shareCode = generateShareCode(); changed = true }
+    if(!r.owner && r.users?.length){ r.owner = r.users[0]; changed = true }
   })
   if(changed) save()
 }
@@ -30,7 +31,7 @@ function renderMyCodes(page){
   const box = page.querySelector('#share-my')
   box.innerHTML = ''
   const me = STORE.currentUser?.name
-  const mine = (STORE.reservations||[]).filter(r=> (r.users?.[0]===me)).sort((a,b)=> new Date(a.start)-new Date(b.start))
+  const mine = (STORE.reservations||[]).filter(r=> (r.owner===me)).sort((a,b)=> new Date(a.start)-new Date(b.start))
   if(!mine.length){ box.innerHTML = '<div class="muted">Nog geen deelcodes. Maak eerst een reservering.</div>'; return }
   mine.forEach(r=>{
     const boat = STORE.boats.find(b=>b.id===r.boatId)
@@ -60,11 +61,15 @@ function renderMyCodes(page){
   })
 }
 
-function joinReservation(res, page){
+function joinReservation(res, page, codeInput){
   if(!res) return alert('Geen reservering gevonden')
   const me = STORE.currentUser?.name
   if(!me) return alert('Log in om mee te doen')
   if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
+  const codeRaw = codeInput ?? prompt('Voer de 4-cijferige code in')
+  if(!codeRaw) return alert('Voer de code in om aan te sluiten')
+  const code = codeRaw.trim()
+  if(code !== res.shareCode) return alert('Onjuiste code. Vraag de code aan de host.')
   if(!res.users) res.users = []
   if(!res.users.includes(me)){
     res.users.push(me)
@@ -103,7 +108,7 @@ function renderOpenShares(page){
           <div class="muted">Crew: ${r.users.join(', ')} • ~${per} pt p.p. (incl. jou)</div>
         </div>
         <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
-          <span class="pill ghost">${r.shareCode}</span>
+          <span class="pill ghost">Code via host</span>
           <button class="small" data-join>Inschrijven</button>
         </div>
       </div>
@@ -141,6 +146,7 @@ function redeem(page){
   const input = page.querySelector('#share-code')
   const code = (input.value||'').trim()
   if(!code) return alert('Voer een code in')
+  if(!STORE.currentUser) return alert('Log eerst in om een code te gebruiken')
   const res = (STORE.reservations||[]).find(r=> (r.shareCode||'') === code)
   if(!res) return alert('Onbekende code')
   if(!res.shareCode) res.shareCode = code

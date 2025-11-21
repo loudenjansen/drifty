@@ -134,7 +134,9 @@ function reserveSlot(page){
     r.shareCode = generateShareCode()
     STORE.reservations.push(r)
   }
-  const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
+  const me = STORE.currentUser?.name
+  if (me && !r.users.includes(me)) r.users.push(me)
+  if(me && !r.owner) r.owner = me
   save(); renderResList(page); alert('Onder voorbehoud. Betalen pas bij activeren.')
 }
 
@@ -146,7 +148,13 @@ function joinExact(page){
   let r = STORE.reservations.find(x=>x.boatId===STORE.currentBoatId && x.start===start && x.end===end)
   if(!r) return alert('Geen exact slot gevonden')
   if(!r.shareCode || !/^\d{4}$/.test(r.shareCode)) r.shareCode = generateShareCode()
-  const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
+  const me = STORE.currentUser?.name
+  if(!me) return alert('Log in om mee te doen')
+  if(r.owner && r.owner !== me && !r.users.includes(me)){
+    const codeRaw = prompt('Voer de 4-cijferige deelcode in')
+    if(!codeRaw || codeRaw.trim() !== r.shareCode) return alert('Onjuiste code. Vraag de code aan de host.')
+  }
+  if (me && !r.users.includes(me)) r.users.push(me)
   save(); renderResList(page); alert('Je doet mee met dit slot')
 }
 
@@ -156,6 +164,8 @@ function renderResList(page){
   if(!list.length){ box.innerHTML='<div class="muted">Nog geen reserveringen</div>'; return }
   list.forEach(r=>{
     const perPerson = (r.total/Math.max(1,r.users.length))
+    const me = STORE.currentUser?.name
+    const isOwner = !!me && (r.owner ? r.owner===me : r.users?.[0]===me)
     const row = document.createElement('div'); row.className='card strong'
     row.innerHTML = `
       <div class="row" style="justify-content:space-between; align-items:flex-start">
@@ -167,11 +177,15 @@ function renderResList(page){
       </div>
       <div class="muted" style="margin-top:6px">Kosten: ${r.total.toFixed(3)} pt (~${perPerson.toFixed(3)} p.p.)</div>
       <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-        <span class="pill ghost">Deelcode: ${r.shareCode||'Nog niet gegenereerd'}</span>
+        <span class="pill ghost">${isOwner ? `Deelcode: ${r.shareCode||'Nog niet gegenereerd'}` : 'Code alleen zichtbaar voor host'}</span>
         <button class="small" data-share>Open deelpagina</button>
       </div>
     `
-    row.querySelector('[data-share]').onclick = () => { STORE.currentBoatId = r.boatId; STORE.sharePrefillCode = r.shareCode; navigate('share') }
+    row.querySelector('[data-share]').onclick = () => {
+      STORE.currentBoatId = r.boatId
+      STORE.sharePrefillCode = isOwner ? r.shareCode : null
+      navigate('share')
+    }
     box.appendChild(row)
   })
 }
