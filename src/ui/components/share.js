@@ -1,4 +1,4 @@
-import { STORE, save } from '../../state/store.js'
+import { STORE, save, generateShareCode } from '../../state/store.js'
 import { navigate } from '../router.js'
 
 function renderNav(container){
@@ -20,7 +20,7 @@ function renderNav(container){
 function ensureCodes(){
   let changed = false
   (STORE.reservations||[]).forEach(r => {
-    if(!r.shareCode){ r.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase(); changed = true }
+    if(!r.shareCode || !/^\d{4}$/.test(r.shareCode)){ r.shareCode = generateShareCode(); changed = true }
   })
   if(changed) save()
 }
@@ -63,7 +63,7 @@ function joinReservation(res, page){
   if(!res) return alert('Geen reservering gevonden')
   const me = STORE.currentUser?.name
   if(!me) return alert('Log in om mee te doen')
-  if(!res.shareCode) res.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
+  if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
   if(!res.users) res.users = []
   if(!res.users.includes(me)){
     res.users.push(me)
@@ -138,9 +138,9 @@ function showResult(page, res){
 
 function redeem(page){
   const input = page.querySelector('#share-code')
-  const code = (input.value||'').trim().toUpperCase()
+  const code = (input.value||'').trim()
   if(!code) return alert('Voer een code in')
-  const res = (STORE.reservations||[]).find(r=> (r.shareCode||'').toUpperCase() === code)
+  const res = (STORE.reservations||[]).find(r=> (r.shareCode||'') === code)
   if(!res) return alert('Onbekende code')
   if(!res.shareCode) res.shareCode = code
   const me = STORE.currentUser?.name
@@ -174,8 +174,8 @@ export function renderShare(){
     <div class="layout-split">
       <div class="card fade-card">
         <h2>Met code aansluiten</h2>
-        <p class="muted">Voer de code in die je vriend heeft gedeeld om samen te varen.</p>
-        <input id="share-code" placeholder="Bijv. DRF-ABCDE" />
+        <p class="muted">Voer de 4-cijferige code in die je vriend heeft gedeeld om samen te varen.</p>
+        <input id="share-code" placeholder="Bijv. 1234" />
         <button id="share-submit">Deelcode gebruiken</button>
         <div class="msg" style="margin-top:10px">Kosten per persoon: totaal / aantal deelnemers. 2 pers. = 0,5 pt, 4 pers. = 0,25 pt per uur.</div>
         <div id="share-result" style="margin-top:12px"></div>

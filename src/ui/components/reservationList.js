@@ -1,4 +1,4 @@
-import { STORE, save } from '../../state/store.js'
+import { STORE, save, generateShareCode } from '../../state/store.js'
 import { hoursBetween, toISODateHour, timesOverlap } from '../../lib/utils.js'
 import { navigate } from '../router.js'
 
@@ -130,7 +130,7 @@ function reserveSlot(page){
   if(!r){
     r = { id:crypto.randomUUID?.()||start, boatId:STORE.currentBoatId, start, end, users:[], status:'pending' }
     calcCost(r)
-    r.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
+    r.shareCode = generateShareCode()
     STORE.reservations.push(r)
   }
   const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
@@ -144,7 +144,7 @@ function joinExact(page){
   const start = toISODateHour(date,hour), end = toISODateHour(date,hour+dur)
   let r = STORE.reservations.find(x=>x.boatId===STORE.currentBoatId && x.start===start && x.end===end)
   if(!r) return alert('Geen exact slot gevonden')
-  if(!r.shareCode) r.shareCode = 'DRF-' + Math.random().toString(36).slice(2,7).toUpperCase()
+  if(!r.shareCode || !/^\d{4}$/.test(r.shareCode)) r.shareCode = generateShareCode()
   const me = STORE.currentUser?.name; if (me && !r.users.includes(me)) r.users.push(me)
   save(); renderResList(page); alert('Je doet mee met dit slot')
 }

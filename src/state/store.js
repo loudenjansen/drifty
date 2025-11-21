@@ -16,6 +16,11 @@ export const STORE = {
   sharePrefillCode: null,
 }
 
+export function generateShareCode(){
+  // Random 4-digit numeric code for sharing reservations
+  return String(Math.floor(1000 + Math.random() * 9000))
+}
+
 export function initStore(){
   if (!STORE.boats || !STORE.boats.length){
     STORE.boats = [
