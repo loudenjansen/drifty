@@ -13,6 +13,7 @@ export const STORE = {
   currentBoatId: null,
   shopItems: [],
   chores: [],
+  socialPosts: [],
   sharePrefillCode: null,
 }
 
@@ -42,6 +43,38 @@ export function initStore(){
     STORE.chores = [
       { id: crypto.randomUUID?.() || 'clean-deck', title:'Reinig het dek', details:'Snelle poetsbeurt en check van veiligheidslijnen.', reward: 5, status:'open', claimedBy:null },
       { id: crypto.randomUUID?.() || 'refill-gear', title:'Check reddingsvesten', details:'Controleer en vul de lockers bij.', reward: 4, status:'open', claimedBy:null },
+    ]
+  }
+
+  if (!STORE.socialPosts || !STORE.socialPosts.length){
+    STORE.socialPosts = [
+      {
+        id: crypto.randomUUID?.() || 'sail-1',
+        user: 'Mila',
+        caption: 'Golden hour in de grachten — vloeiend water en zachte wind.',
+        image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80',
+        likes: 42,
+        location: 'Amsterdam',
+        createdAt: Date.now() - 1000 * 60 * 60 * 6,
+      },
+      {
+        id: crypto.randomUUID?.() || 'sail-2',
+        user: 'Jasper',
+        caption: 'Crew klaar, koers richting het IJ. Drifty vibes ✨',
+        image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+        likes: 35,
+        location: 'IJhaven',
+        createdAt: Date.now() - 1000 * 60 * 60 * 12,
+      },
+      {
+        id: crypto.randomUUID?.() || 'sail-3',
+        user: 'Noor',
+        caption: 'Night cruise met neon skyline — bedankt crew! 🌊',
+        image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80',
+        likes: 28,
+        location: 'Houthavens',
+        createdAt: Date.now() - 1000 * 60 * 60 * 24,
+      },
     ]
   }
 }

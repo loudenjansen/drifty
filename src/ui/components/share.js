@@ -8,6 +8,7 @@ function renderNav(container){
   nav.innerHTML = `
     <button data-nav="home">🏠 Home</button>
     <button class="active" data-nav="share">🤝 Delen</button>
+    <button data-nav="social">📸 Social</button>
     <button data-nav="shop">🛒 Shop</button>
     <button data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>
