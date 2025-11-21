@@ -7,6 +7,7 @@ function renderNav(container){
   const isAdmin = !!STORE.currentUser?.isAdmin
   nav.innerHTML = `
     <button data-nav="home">🏠 Home</button>
+    <button data-nav="shop">🛒 Shop</button>
     <button class="active" data-nav="profile">👤 Profiel</button>
     <button data-nav="leader">🏆 Leaderboard</button>
     ${isAdmin ? '<button data-nav="admin">🛠️ Admin</button>' : ''}
