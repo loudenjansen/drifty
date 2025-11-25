@@ -22,12 +22,18 @@ export function generateShareCode(){
   return String(Math.floor(1000 + Math.random() * 9000))
 }
 
+function ensureArrays(){
+  if (!Array.isArray(STORE.reservations)) STORE.reservations = []
+  if (!Array.isArray(STORE.boats)) STORE.boats = []
+}
+
 export function initStore(){
+  ensureArrays()
   if (!STORE.boats || !STORE.boats.length){
     STORE.boats = [
-      { id:1, name:'Boot 1', x:80,  y:60,  status:'available' },
-      { id:2, name:'Boot 2', x:220, y:120, status:'available' },
-      { id:3, name:'Boot 3', x:340, y:160, status:'available' },
+      { id:1, name:'Boot 1', x:80,  y:60,  status:'available', location:'Amsterdam' },
+      { id:2, name:'Boot 2', x:220, y:120, status:'available', location:'Rotterdam' },
+      { id:3, name:'Boot 3', x:340, y:160, status:'available', location:'Utrecht' },
     ]
   }
 
@@ -94,6 +100,7 @@ export function save(){
 export function loadFromStorage(){
   const data = storage.loadAll()
   if (Object.keys(data).length){ Object.assign(STORE, data) }
+  ensureArrays()
   const cu = storage.loadUserName()
   if (STORE.users?.length){ STORE.users.forEach(ensureAdminFlag) }
   if (cu){

@@ -33,6 +33,7 @@ function renderNav(container){
 }
 
 function ensureCodes(){
+  if(!Array.isArray(STORE.reservations)) STORE.reservations = []
   let changed = false
   (STORE.reservations||[]).forEach(r => {
     const normalized = normalizeReservation(r)
@@ -237,6 +238,33 @@ function renderReservedList(page){
   })
 }
 
+function renderReserveableBoats(page){
+  const box = page.querySelector('#share-boats')
+  if(!box) return
+  box.innerHTML = ''
+  const boats = Array.isArray(STORE.boats) ? STORE.boats : []
+  if(!boats.length){ box.innerHTML = '<div class="muted">Geen boten beschikbaar.</div>'; return }
+
+  boats.forEach(boat => {
+    const card = document.createElement('div')
+    card.className = 'card strong'
+    card.innerHTML = `
+      <div class="row" style="justify-content:space-between; align-items:flex-start">
+        <div>
+          <div class="pill">${boat.name}</div>
+          <div class="muted" style="margin-top:6px">${boat.location || 'Onbekende locatie'}</div>
+        </div>
+        <button class="small" data-reserve>Reserveer</button>
+      </div>
+    `
+    card.querySelector('[data-reserve]').onclick = () => {
+      STORE.currentBoatId = boat.id
+      navigate('boat')
+    }
+    box.appendChild(card)
+  })
+}
+
 export function renderShare(){
   ensureCodes()
   const page = document.createElement('div')
@@ -281,6 +309,12 @@ export function renderShare(){
       <p class="muted">Alle lopende reserveringen met hun host en verdeling. Hosts zien hun deelcode en kunnen die kopiëren.</p>
       <div id="share-reserved" class="list-stack" style="margin-top:10px"></div>
     </div>
+
+    <div class="section-title">🛥️ Boten beschikbaar om te reserveren</div>
+    <div class="card fade-card">
+      <p class="muted">Kies een boot, bekijk de stad en start je reservering. Deel de code zodra je de eerste reserveerder bent.</p>
+      <div id="share-boats" class="list-stack" style="margin-top:10px"></div>
+    </div>
   `
 
   page.querySelector('#back').onclick = () => navigate('home')
@@ -295,6 +329,7 @@ export function renderShare(){
   renderMyCodes(page)
   renderOpenShares(page)
   renderReservedList(page)
+  renderReserveableBoats(page)
   renderNav(page)
   return page
 }
