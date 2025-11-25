@@ -4,6 +4,7 @@ export const STORE = {
   users: [],
   boats: [],
   reservations: [],
+  crews: [],
   weather: { code: 'green' },
   safety: {},
   docs: [],
@@ -25,6 +26,7 @@ export function generateShareCode(){
 function ensureArrays(){
   if (!Array.isArray(STORE.reservations)) STORE.reservations = []
   if (!Array.isArray(STORE.boats)) STORE.boats = []
+  if (!Array.isArray(STORE.crews)) STORE.crews = []
 }
 
 export function initStore(){
