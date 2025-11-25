@@ -34,7 +34,9 @@ function ensureArrays(){
 }
 
 function ensureChats(){
-  if (!STORE.chats || typeof STORE.chats !== 'object' || Array.isArray(STORE.chats)) STORE.chats = { reservations: [], crews: [] }
+  if (!STORE.chats || typeof STORE.chats !== 'object' || Array.isArray(STORE.chats)) {
+    STORE.chats = { reservations: [], crews: [] }
+  }
   if (!Array.isArray(STORE.chats.reservations)) STORE.chats.reservations = []
   if (!Array.isArray(STORE.chats.crews)) STORE.chats.crews = []
 }
@@ -120,4 +122,118 @@ export function loadFromStorage(){
     if (found) STORE.currentUser = found
   }
   if (STORE.currentUser) ensureAdminFlag(STORE.currentUser)
+}
+
+export async function loadBoatsFromSupabase(){
+  ensureArrays()
+  const client = window?.supabaseClient
+  if (!client){
+    console.error('[supabase] loadBoats error: supabase client missing')
+    STORE.boats = Array.isArray(STORE.boats) ? STORE.boats : []
+    return STORE.boats
+  }
+  try {
+    const { data, error } = await client
+      .from('boats')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    STORE.boats = Array.isArray(data)
+      ? data.map(b => ({
+          id: b.id,
+          name: b.name || 'Boot',
+          location: b.location || b.city || 'Onbekende locatie',
+          city: b.city || b.location || '',
+          status: b.is_active ? 'available' : 'inactive',
+        }))
+      : []
+  } catch(err){
+    console.error('[supabase] loadBoats error', err)
+    STORE.boats = []
+  }
+  save()
+  return STORE.boats
+}
+
+export async function loadReservationsFromSupabase(currentUserId){
+  ensureArrays()
+  const client = window?.supabaseClient
+  if (!currentUserId || !client){
+    if (!client) console.error('[supabase] loadReservations error: supabase client missing')
+    STORE.reservations = Array.isArray(STORE.reservations) ? STORE.reservations : []
+    return STORE.reservations
+  }
+  try {
+    const { data, error } = await client
+      .from('reservations')
+      .select('*')
+      .eq('user_id', currentUserId)
+      .order('start_time', { ascending: true })
+    if (error) throw error
+    const existingMap = new Map((STORE.reservations||[]).map(r => [r.id, r]))
+    STORE.reservations = Array.isArray(data)
+      ? data.map(row => {
+          const existing = existingMap.get(row.id) || {}
+          const ownerName = existing.owner || STORE.currentUser?.name || existing.users?.[0] || null
+          const users = Array.isArray(existing.users) && existing.users.length
+            ? existing.users
+            : [STORE.currentUser?.name].filter(Boolean)
+          const shareCode = existing.shareCode && /^\d{4}$/.test(existing.shareCode) ? existing.shareCode : generateShareCode()
+          return {
+            ...existing,
+            id: row.id,
+            boatId: row.boat_id,
+            start: row.start_time,
+            end: row.end_time,
+            status: row.status || existing.status || 'confirmed',
+            users,
+            owner: ownerName,
+            shareCode,
+          }
+        })
+      : []
+  } catch(err){
+    console.error('[supabase] loadReservations error', err)
+    STORE.reservations = Array.isArray(STORE.reservations) ? STORE.reservations : []
+  }
+  save()
+  return STORE.reservations
+}
+
+export async function createReservation({ userId, boatId, startTime, endTime }){
+  ensureArrays()
+  const client = window?.supabaseClient
+  if (!client){
+    console.error('[supabase] createReservation error: supabase client missing')
+    return null
+  }
+  try {
+    const payload = {
+      user_id: userId,
+      boat_id: boatId,
+      start_time: startTime,
+      end_time: endTime,
+      status: 'confirmed',
+    }
+    const { data, error } = await client.from('reservations').insert(payload).select().single()
+    if (error) throw error
+    const shareCode = generateShareCode()
+    const reservation = {
+      id: data.id,
+      boatId: data.boat_id,
+      start: data.start_time,
+      end: data.end_time,
+      status: data.status || 'confirmed',
+      users: [STORE.currentUser?.name].filter(Boolean),
+      owner: STORE.currentUser?.name || null,
+      shareCode,
+    }
+    STORE.reservations.push(reservation)
+    save()
+    return reservation
+  } catch(err){
+    console.error('[supabase] createReservation error', err)
+    return null
+  }
 }

@@ -1,4 +1,4 @@
-import { STORE, save, generateShareCode } from '../../state/store.js'
+import { STORE, save, generateShareCode, loadReservationsFromSupabase } from '../../state/store.js'
 import { navigate } from '../router.js'
 
 function ensureChatStore(){
@@ -103,6 +103,8 @@ export function renderProfile(){
   page.querySelector('#back').onclick = () => navigate('home')
   page.querySelectorAll('[data-add]').forEach(btn=> btn.onclick = () => { const n=+btn.dataset.add; STORE.currentUser.points=(STORE.currentUser.points||0)+n; save(); update() })
 
+  let reservationsHydrated = false
+
   function update(){
     ensureChatStore()
     page.querySelector('#p-name').textContent = STORE.currentUser?.name || '-'
@@ -110,6 +112,26 @@ export function renderProfile(){
     renderCrew()
     renderCrewChatSection()
     renderReservations()
+  }
+
+  async function hydrateReservations(){
+    if (reservationsHydrated) return
+    reservationsHydrated = true
+    try {
+      const supa = window?.supabaseClient
+      let userId = STORE.currentUser?.id || null
+      if (supa?.auth?.getUser){
+        const { data, error } = await supa.auth.getUser()
+        if (!error && data?.user?.id){
+          userId = data.user.id
+        }
+      }
+      if (!userId) return
+      await loadReservationsFromSupabase(userId)
+      update()
+    } catch(err){
+      console.error('[profile] hydrate reservations error', err)
+    }
   }
 
   function getReservations(){
@@ -538,6 +560,7 @@ export function renderProfile(){
   }
 
   update()
+  hydrateReservations()
   renderNav(page)
   return page
 }
