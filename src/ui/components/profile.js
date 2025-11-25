@@ -1,6 +1,26 @@
 import { STORE, save, generateShareCode } from '../../state/store.js'
 import { navigate } from '../router.js'
 
+function ensureChatStore(){
+  if(!STORE.chats || typeof STORE.chats !== 'object' || Array.isArray(STORE.chats)) STORE.chats = { reservations: [], crews: [] }
+  if(!Array.isArray(STORE.chats.reservations)) STORE.chats.reservations = []
+  if(!Array.isArray(STORE.chats.crews)) STORE.chats.crews = []
+}
+
+function normalizeReservation(res){
+  if(!res || typeof res !== 'object') return null
+  if(!Array.isArray(res.users)) res.users = []
+  if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
+  if(!res.id) res.id = res.shareCode || crypto.randomUUID?.() || `res-${Date.now()}`
+  return res
+}
+
+function getCrewId(res){
+  const norm = normalizeReservation(res)
+  if(!norm) return null
+  return norm.shareCode || norm.id
+}
+
 function renderNav(container){
   const nav = document.createElement('div')
   nav.className = 'bottom-nav'
@@ -70,6 +90,13 @@ export function renderProfile(){
       </div>
     </div>
 
+    <div class="card fade-card" id="crew-chat-section">
+      <div class="pill">Crew chat</div>
+      <h2>Praat met je crew</h2>
+      <p class="muted">Kies een crew en chat in de vaste ruimte. Gebruik dezelfde 4-cijferige codes als in de deel-flow.</p>
+      <div id="crew-chat"></div>
+    </div>
+
     <h2>Mijn reserveringen</h2>
     <div id="my-res" class="list-stack"></div>
   `
@@ -77,9 +104,11 @@ export function renderProfile(){
   page.querySelectorAll('[data-add]').forEach(btn=> btn.onclick = () => { const n=+btn.dataset.add; STORE.currentUser.points=(STORE.currentUser.points||0)+n; save(); update() })
 
   function update(){
+    ensureChatStore()
     page.querySelector('#p-name').textContent = STORE.currentUser?.name || '-'
     page.querySelector('#p-pts').textContent = (STORE.currentUser?.points ?? 0).toFixed(2)
     renderCrew()
+    renderCrewChatSection()
     renderReservations()
   }
 
@@ -97,6 +126,131 @@ export function renderProfile(){
     if(!Array.isArray(crew.users)) crew.users = []
     if(!crew.id) crew.id = crypto.randomUUID?.() || 'crew-'+Date.now()
     if(!crew.shareCode || !/^\d{4}$/.test(crew.shareCode)) crew.shareCode = generateShareCode()
+  }
+
+  function renderCrewChatSection(){
+    const box = page.querySelector('#crew-chat'); if(!box) return
+    box.innerHTML = ''
+    ensureChatStore()
+    const me = STORE.currentUser?.name
+    if(!me){ box.innerHTML = '<div class="muted">Log in om crew chat te gebruiken.</div>'; return }
+
+    const optionsMap = new Map()
+    getCrews().forEach(c => {
+      try {
+        ensureCrewShape(c)
+        if(c.users?.includes(me)){
+          const crewId = c.shareCode || c.id
+          if(crewId && !optionsMap.has(crewId)) optionsMap.set(crewId, { id: crewId, label: `Crew ${crewId}`, canChat: true })
+        }
+      } catch(err){ console.error('[profile] crew chat crew map error', err, c) }
+    })
+
+    getReservations().forEach(r => {
+      try {
+        const norm = normalizeReservation(r)
+        if(!norm || !Array.isArray(norm.users) || !norm.users.includes(me)) return
+        const boat = (STORE.boats||[]).find(b => b.id === norm.boatId)
+        const crewId = getCrewId(norm)
+        const label = `${boat?.name||'Boot'} • ${norm.shareCode||crewId}`
+        if(crewId && !optionsMap.has(crewId)) optionsMap.set(crewId, { id: crewId, label, canChat: true })
+      } catch(err){ console.error('[profile] crew chat reservation map error', err, r) }
+    })
+
+    const options = Array.from(optionsMap.values())
+    if(!options.length){ box.innerHTML = '<div class="muted">Je zit nog in geen enkele crew.</div>'; return }
+
+    const selectorWrap = document.createElement('div')
+    selectorWrap.className = 'row'
+    selectorWrap.style.alignItems = 'flex-end'
+    const select = document.createElement('select')
+    select.style.minWidth = '220px'
+    options.forEach(opt => {
+      const o = document.createElement('option')
+      o.value = opt.id
+      o.textContent = opt.label
+      select.appendChild(o)
+    })
+    selectorWrap.appendChild(select)
+    box.appendChild(selectorWrap)
+
+    const panel = document.createElement('div')
+    panel.className = 'card'
+    panel.style.marginTop = '10px'
+    const messagesEl = document.createElement('div')
+    messagesEl.className = 'msg'
+    messagesEl.style.maxHeight = '240px'
+    messagesEl.style.overflowY = 'auto'
+    messagesEl.style.background = 'rgba(255,255,255,0.04)'
+    messagesEl.style.border = '1px solid rgba(148, 163, 184, 0.25)'
+    const inputRow = document.createElement('div')
+    inputRow.className = 'row'
+    inputRow.style.marginTop = '10px'
+    const input = document.createElement('input')
+    input.placeholder = 'Bericht voor je crew'
+    const send = document.createElement('button')
+    send.className = 'small'
+    send.textContent = 'Verstuur'
+
+    inputRow.appendChild(input)
+    inputRow.appendChild(send)
+    panel.appendChild(messagesEl)
+    panel.appendChild(inputRow)
+    box.appendChild(panel)
+
+    function renderMessages(){
+      messagesEl.innerHTML = ''
+      const activeId = select.value
+      const entry = optionsMap.get(activeId)
+      const messages = (STORE.chats.crews||[]).filter(m => m.crewId === activeId).sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt))
+      if(!messages.length){ messagesEl.innerHTML = '<div class="muted">Nog geen berichten in deze crew.</div>' }
+      messages.forEach(m => {
+        const row = document.createElement('div')
+        row.className = 'msg'
+        row.style.margin = '6px 0'
+        row.innerHTML = `
+          <div class="row" style="justify-content:space-between; gap:8px">
+            <strong>${m.author||'Onbekend'}</strong>
+            <span class="muted" style="font-size:12px">${new Date(m.createdAt||Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          <div style="margin-top:4px">${m.message||''}</div>
+        `
+        messagesEl.appendChild(row)
+      })
+      messagesEl.scrollTop = messagesEl.scrollHeight
+      const canChat = !!entry?.canChat
+      if(!STORE.currentUser){
+        input.value = ''
+        input.placeholder = 'Log in om te chatten.'
+        input.disabled = true; send.disabled = true
+      } else if(!canChat){
+        input.value = ''
+        input.placeholder = 'Je hebt geen toegang tot deze crew.'
+        input.disabled = true; send.disabled = true
+      } else {
+        input.disabled = false; send.disabled = false
+        input.placeholder = 'Bericht voor je crew'
+      }
+    }
+
+    function sendMessage(){
+      try {
+        const activeId = select.value
+        if(!STORE.currentUser){ alert('Log in om te chatten.'); return }
+        if(!activeId){ alert('Geen crew geselecteerd.'); return }
+        const text = (input.value||'').trim()
+        if(!text) return
+        STORE.chats.crews.push({ crewId: activeId, author: STORE.currentUser.name, message: text, createdAt: new Date().toISOString() })
+        save()
+        input.value = ''
+        renderMessages()
+      } catch(err){ console.error('[profile] crew chat send error', err) }
+    }
+
+    select.onchange = () => renderMessages()
+    send.onclick = () => sendMessage()
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); sendMessage() } })
+    renderMessages()
   }
 
   function renderCrew(){
@@ -210,6 +364,86 @@ export function renderProfile(){
     box.appendChild(leave)
   }
 
+  function renderReservationChat(res, mount, me){
+    if(!mount) return
+    ensureChatStore()
+    const norm = normalizeReservation(res)
+    if(!norm){ mount.innerHTML = '<div class="muted">Geen geldige reservering voor chat.</div>'; return }
+    const canChat = !!me && Array.isArray(norm.users) && norm.users.includes(me)
+
+    mount.innerHTML = ''
+    const header = document.createElement('div')
+    header.className = 'row'
+    header.style.justifyContent = 'space-between'
+    header.innerHTML = `<div class="pill">Chat voor deze vaart</div><div class="muted">${canChat ? 'Crew-only' : 'Alleen voor crewleden'}</div>`
+    mount.appendChild(header)
+
+    const list = document.createElement('div')
+    list.className = 'msg'
+    list.style.maxHeight = '200px'
+    list.style.overflowY = 'auto'
+    list.style.background = 'rgba(255,255,255,0.04)'
+    list.style.border = '1px solid rgba(148, 163, 184, 0.25)'
+    list.style.marginTop = '8px'
+    mount.appendChild(list)
+
+    const inputRow = document.createElement('div')
+    inputRow.className = 'row'
+    inputRow.style.marginTop = '8px'
+    const input = document.createElement('input')
+    input.placeholder = canChat ? 'Bericht voor deze vaart' : 'Log in of word crewlid om te chatten.'
+    const send = document.createElement('button')
+    send.className = 'small'
+    send.textContent = 'Verstuur'
+    inputRow.appendChild(input)
+    inputRow.appendChild(send)
+    mount.appendChild(inputRow)
+
+    function renderMessages(){
+      list.innerHTML = ''
+      const msgs = (STORE.chats.reservations||[]).filter(m => m.reservationId === norm.id).sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt))
+      if(!msgs.length){ list.innerHTML = '<div class="muted">Nog geen berichten voor deze vaart.</div>' }
+      msgs.forEach(m => {
+        const row = document.createElement('div')
+        row.className = 'msg'
+        row.style.margin = '6px 0'
+        row.innerHTML = `
+          <div class="row" style="justify-content:space-between; gap:8px">
+            <strong>${m.author||'Onbekend'}</strong>
+            <span class="muted" style="font-size:12px">${new Date(m.createdAt||Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          <div style="margin-top:4px">${m.message||''}</div>
+        `
+        list.appendChild(row)
+      })
+      list.scrollTop = list.scrollHeight
+      if(!STORE.currentUser || !canChat){
+        input.disabled = true; send.disabled = true
+        input.placeholder = STORE.currentUser ? 'Alleen crewleden kunnen chatten.' : 'Log in om te chatten.'
+      } else {
+        input.disabled = false; send.disabled = false
+        input.placeholder = 'Bericht voor deze vaart'
+      }
+    }
+
+    function sendMessage(){
+      try {
+        if(!STORE.currentUser){ alert('Log in om te chatten.'); return }
+        if(!canChat){ alert('Je moet crewlid zijn om te chatten.'); return }
+        const text = (input.value||'').trim()
+        if(!text) return
+        STORE.chats.reservations.push({ reservationId: norm.id, author: STORE.currentUser.name, message: text, createdAt: new Date().toISOString() })
+        save()
+        input.value = ''
+        renderMessages()
+      } catch(err){ console.error('[profile] reservation chat send error', err) }
+    }
+
+    send.onclick = () => sendMessage()
+    input.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); sendMessage() } })
+    renderMessages()
+  }
+
   function renderReservations(){
     const mineBox = page.querySelector('#my-res'); mineBox.innerHTML=''
     const me = STORE.currentUser?.name
@@ -264,7 +498,23 @@ export function renderProfile(){
         extend.onclick = () => extendReservation(r)
         actions.appendChild(extend)
       }
+      const chatToggle = document.createElement('button')
+      chatToggle.className = 'secondary small'
+      chatToggle.textContent = 'Chat voor deze vaart'
+      actions.appendChild(chatToggle)
       el.appendChild(actions)
+
+      const chatWrap = document.createElement('div')
+      chatWrap.style.display = 'none'
+      chatWrap.style.marginTop = '10px'
+      chatWrap.className = 'card'
+      el.appendChild(chatWrap)
+
+      chatToggle.onclick = () => {
+        const visible = chatWrap.style.display === 'block'
+        chatWrap.style.display = visible ? 'none' : 'block'
+        if(!visible) renderReservationChat(r, chatWrap, me)
+      }
       mineBox.appendChild(el)
     })
   }
