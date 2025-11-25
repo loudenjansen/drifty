@@ -10,17 +10,27 @@ function getBoatById(id){
 }
 
 function normalizeReservation(res){
-  if(!res || typeof res !== 'object') return null
-  if(!res.users || !Array.isArray(res.users)) res.users = []
-  if(typeof res.total !== 'number') res.total = Number(res.total || 0)
-  if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
-  if(!res.owner && res.users.length) res.owner = res.users[0]
-  return res
+  try {
+    if(!res || typeof res !== 'object') return null
+    if(!res.users || !Array.isArray(res.users)) res.users = []
+    if(typeof res.total !== 'number') res.total = Number(res.total || 0)
+    if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
+    if(!res.owner && res.users.length) res.owner = res.users[0]
+    return res
+  } catch(err){
+    console.error('[share] normalizeReservation error', err, res)
+    return null
+  }
 }
 
 function crew(res){
-  const norm = normalizeReservation(res)
-  return norm?.users || []
+  try {
+    const norm = normalizeReservation(res)
+    return norm?.users || []
+  } catch(err){
+    console.error('[share] crew error', err, res)
+    return []
+  }
 }
 
 function renderNav(container){
@@ -41,51 +51,61 @@ function renderNav(container){
 }
 
 function ensureCodes(){
-  if(!Array.isArray(STORE.reservations)) STORE.reservations = []
-  let changed = false
-  (STORE.reservations||[]).forEach(r => {
-    const normalized = normalizeReservation(r)
-    if(normalized !== r) changed = true
-  })
-  if(changed) save()
+  try {
+    if(!Array.isArray(STORE.reservations)) STORE.reservations = []
+    let changed = false
+    (STORE.reservations||[]).forEach(r => {
+      const normalized = normalizeReservation(r)
+      if(normalized !== r) changed = true
+    })
+    if(changed) save()
+  } catch(err){
+    console.error('[share] ensureCodes error', err)
+  }
 }
 
 function renderMyCodes(page){
   const box = page.querySelector('#share-my')
+  if(!box) return
   box.innerHTML = ''
-  const me = STORE.currentUser?.name
-  const mine = (STORE.reservations||[])
-    .map(normalizeReservation)
-    .filter(Boolean)
-    .filter(r=> (r.owner===me))
-    .sort((a,b)=> new Date(a.start)-new Date(b.start))
-  if(!mine.length){ box.innerHTML = '<div class="muted">Nog geen deelcodes. Maak eerst een reservering.</div>'; return }
-  mine.forEach(r=>{
-    const boat = getBoatById(r.boatId)
-    const per = (r.total/Math.max(1,crew(r).length)).toFixed(3)
-    const card = document.createElement('div')
-    card.className = 'card strong'
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">${boat?.name||'Boot'}</div>
-          <div style="font-weight:700; font-size:18px; margin-top:6px">${new Date(r.start).toLocaleString()}</div>
-          <div class="muted">Crew: ${r.users.length} • ~${per} pt p.p.</div>
+  try {
+    const me = STORE.currentUser?.name
+    const mine = (Array.isArray(STORE.reservations) ? STORE.reservations : [])
+      .map(normalizeReservation)
+      .filter(Boolean)
+      .filter(r=> (r.owner===me))
+      .sort((a,b)=> new Date(a.start)-new Date(b.start))
+    if(!mine.length){ box.innerHTML = '<div class="muted">Nog geen deelcodes. Maak eerst een reservering.</div>'; return }
+    mine.forEach(r=>{
+      const boat = getBoatById(r.boatId)
+      const per = (r.total/Math.max(1,crew(r).length)).toFixed(3)
+      const card = document.createElement('div')
+      card.className = 'card strong'
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">${boat?.name||'Boot'}</div>
+            <div style="font-weight:700; font-size:18px; margin-top:6px">${new Date(r.start).toLocaleString()}</div>
+            <div class="muted">Crew: ${r.users.length} • ~${per} pt p.p.</div>
+          </div>
+          <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
+            <span class="pill ghost">${r.shareCode}</span>
+            <button class="small" data-copy>Code kopiëren</button>
+          </div>
         </div>
-        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
-          <span class="pill ghost">${r.shareCode}</span>
-          <button class="small" data-copy>Code kopiëren</button>
-        </div>
-      </div>
-    `
-    card.querySelector('[data-copy]').onclick = () => {
-      const text = r.shareCode
-      if(navigator.clipboard){ navigator.clipboard.writeText(text) }
-      else { prompt('Kopieer de code', text) }
-      alert('Deelcode gekopieerd')
-    }
-    box.appendChild(card)
-  })
+      `
+      card.querySelector('[data-copy]').onclick = () => {
+        const text = r.shareCode
+        if(navigator.clipboard){ navigator.clipboard.writeText(text) }
+        else { prompt('Kopieer de code', text) }
+        alert('Deelcode gekopieerd')
+      }
+      box.appendChild(card)
+    })
+  } catch(err){
+    console.error('[share] renderMyCodes error', err)
+    box.innerHTML = '<div class="muted">Kon deelcodes niet laden.</div>'
+  }
 }
 
 function joinReservation(res, page, codeInput){
@@ -114,64 +134,76 @@ function renderOpenShares(page){
   const box = page.querySelector('#share-open')
   if(!box) return
   box.innerHTML = ''
-  const me = STORE.currentUser?.name
-  const list = (STORE.reservations||[])
-    .map(normalizeReservation)
-    .filter(Boolean)
-    .filter(r => (r.users?.length)
-      && (!me || !r.users.includes(me)))
-    .sort((a,b)=> new Date(a.start)-new Date(b.start))
+  try {
+    const me = STORE.currentUser?.name
+    const list = (Array.isArray(STORE.reservations) ? STORE.reservations : [])
+      .map(normalizeReservation)
+      .filter(Boolean)
+      .filter(r => (r.users?.length)
+        && (!me || !r.users.includes(me)))
+      .sort((a,b)=> new Date(a.start)-new Date(b.start))
 
-  if(!list.length){ box.innerHTML = '<div class="muted">Nog geen gedeelde boten beschikbaar.</div>'; return }
+    if(!list.length){ box.innerHTML = '<div class="muted">Nog geen gedeelde boten beschikbaar.</div>'; return }
 
-  list.forEach(r => {
-    const boat = getBoatById(r.boatId)
-    const per = (r.total/Math.max(1,crew(r).length+1)).toFixed(3)
-    const card = document.createElement('div')
-    card.className = 'card strong'
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">${boat?.name||'Boot'}</div>
-          <div style="font-weight:700; margin-top:6px">${new Date(r.start).toLocaleString()}</div>
-          <div class="muted">Crew: ${r.users.join(', ')} • ~${per} pt p.p. (incl. jou)</div>
+    list.forEach(r => {
+      const boat = getBoatById(r.boatId)
+      const per = (r.total/Math.max(1,crew(r).length+1)).toFixed(3)
+      const card = document.createElement('div')
+      card.className = 'card strong'
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">${boat?.name||'Boot'}</div>
+            <div style="font-weight:700; margin-top:6px">${new Date(r.start).toLocaleString()}</div>
+            <div class="muted">Crew: ${r.users.join(', ')} • ~${per} pt p.p. (incl. jou)</div>
+          </div>
+          <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
+            <span class="pill ghost">Code via host</span>
+            <button class="small" data-join>Inschrijven</button>
+          </div>
         </div>
-        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
-          <span class="pill ghost">Code via host</span>
-          <button class="small" data-join>Inschrijven</button>
-        </div>
-      </div>
-    `
-    card.querySelector('[data-join]').onclick = () => joinReservation(r, page)
-    box.appendChild(card)
-  })
+      `
+      card.querySelector('[data-join]').onclick = () => joinReservation(r, page)
+      box.appendChild(card)
+    })
+  } catch(err){
+    console.error('[share] renderOpenShares error', err)
+    box.innerHTML = '<div class="muted">Kon gedeelde boten niet laden.</div>'
+  }
 }
 
 function showResult(page, res){
-  const normalized = normalizeReservation(res)
-  if(!normalized) return
-  const boat = getBoatById(normalized.boatId)
-  const crewList = crew(normalized)
-  const per = (normalized.total/Math.max(1,crewList.length)).toFixed(3)
-  const wrap = page.querySelector('#share-result')
-  wrap.innerHTML = `
-    <div class="card fade-card">
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">${boat?.name||'Boot'}</div>
-          <h2 style="margin:6px 0">Slot gedeeld</h2>
-          <div class="muted">${new Date(normalized.start).toLocaleString()} → ${new Date(normalized.end).toLocaleString()}</div>
+  try {
+    const normalized = normalizeReservation(res)
+    if(!normalized) return
+    const boat = getBoatById(normalized.boatId)
+    const crewList = crew(normalized)
+    const per = (normalized.total/Math.max(1,crewList.length)).toFixed(3)
+    const wrap = page.querySelector('#share-result')
+    wrap.innerHTML = `
+      <div class="card fade-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">${boat?.name||'Boot'}</div>
+            <h2 style="margin:6px 0">Slot gedeeld</h2>
+            <div class="muted">${new Date(normalized.start).toLocaleString()} → ${new Date(normalized.end).toLocaleString()}</div>
+          </div>
+          <span class="pill green">Crew: ${crewList.length}</span>
         </div>
-        <span class="pill green">Crew: ${crewList.length}</span>
+        <div class="msg" style="margin-top:10px">Kosten worden gesplitst: ${normalized.total.toFixed(3)} pt / ${crewList.length} = ${per} pt per persoon.</div>
+        <div class="row" style="gap:8px; margin-top:8px; flex-wrap:wrap">
+          <span class="pill ghost">Deelcode: ${normalized.shareCode}</span>
+          <button class="small" id="to-boat">Naar boot</button>
+        </div>
       </div>
-      <div class="msg" style="margin-top:10px">Kosten worden gesplitst: ${normalized.total.toFixed(3)} pt / ${crewList.length} = ${per} pt per persoon.</div>
-      <div class="row" style="gap:8px; margin-top:8px; flex-wrap:wrap">
-        <span class="pill ghost">Deelcode: ${normalized.shareCode}</span>
-        <button class="small" id="to-boat">Naar boot</button>
-      </div>
-    </div>
-  `
-  wrap.querySelector('#to-boat').onclick = () => { STORE.currentBoatId = normalized.boatId; navigate('boat') }
+    `
+    const toBoat = wrap.querySelector('#to-boat')
+    if(toBoat){
+      toBoat.onclick = () => { STORE.currentBoatId = normalized.boatId; navigate('boat') }
+    }
+  } catch(err){
+    console.error('[share] showResult error', err, res)
+  }
 }
 
 function redeem(page){
@@ -197,147 +229,172 @@ function redeem(page){
 
 function renderReservedList(page){
   const box = page.querySelector('#share-reserved')
+  if(!box) return
   box.innerHTML = ''
-  const me = STORE.currentUser?.name
-  const list = (STORE.reservations||[])
-    .map(normalizeReservation)
-    .filter(Boolean)
-    .sort((a,b)=> new Date(a.start)-new Date(b.start))
+  try {
+    const me = STORE.currentUser?.name
+    const list = (Array.isArray(STORE.reservations) ? STORE.reservations : [])
+      .map(normalizeReservation)
+      .filter(Boolean)
+      .sort((a,b)=> new Date(a.start)-new Date(b.start))
 
-  if(!list.length){
-    box.innerHTML = '<div class="muted">Nog geen gereserveerde boten. Boek een slot en deel de code met je crew.</div>'
-    return
-  }
+    if(!list.length){
+      box.innerHTML = '<div class="muted">Nog geen gereserveerde boten. Boek een slot en deel de code met je crew.</div>'
+      return
+    }
 
-  list.forEach(res => {
-    const boat = getBoatById(res.boatId)
-    const crewList = crew(res)
-    const isHost = !!me && res.owner === me
-    const per = (res.total/Math.max(1,crewList.length)).toFixed(3)
-    const card = document.createElement('div')
-    card.className = 'card strong'
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">${boat?.name||'Boot'}</div>
-          <div style="font-weight:700; margin-top:6px">${new Date(res.start).toLocaleString()}</div>
-          <div class="muted">Crew: ${crewList.join(', ')||'—'} • ~${per} pt p.p.</div>
-          ${res.owner ? `<div class="muted" style="margin-top:4px">Host: ${res.owner}</div>` : ''}
+    list.forEach(res => {
+      const boat = getBoatById(res.boatId)
+      const crewList = crew(res)
+      const isHost = !!me && res.owner === me
+      const per = (res.total/Math.max(1,crewList.length)).toFixed(3)
+      const card = document.createElement('div')
+      card.className = 'card strong'
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">${boat?.name||'Boot'}</div>
+            <div style="font-weight:700; margin-top:6px">${new Date(res.start).toLocaleString()}</div>
+            <div class="muted">Crew: ${crewList.join(', ')||'—'} • ~${per} pt p.p.</div>
+            ${res.owner ? `<div class="muted" style="margin-top:4px">Host: ${res.owner}</div>` : ''}
+          </div>
+          <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+            <span class="pill ghost">${isHost ? `Code: ${res.shareCode}` : 'Code via host'}</span>
+            ${isHost ? '<button class="small" data-copy>Kopieer code</button>' : '<button class="small" data-join>Inschrijven</button>'}
+          </div>
         </div>
-        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
-          <span class="pill ghost">${isHost ? `Code: ${res.shareCode}` : 'Code via host'}</span>
-          ${isHost ? '<button class="small" data-copy>Kopieer code</button>' : '<button class="small" data-join>Inschrijven</button>'}
-        </div>
-      </div>
-    `
-    const copy = card.querySelector('[data-copy]')
-    if(copy){
-      copy.onclick = () => {
-        if(navigator.clipboard){ navigator.clipboard.writeText(res.shareCode) }
-        else { prompt('Kopieer de code', res.shareCode) }
-        alert('Code gekopieerd')
+      `
+      const copy = card.querySelector('[data-copy]')
+      if(copy){
+        copy.onclick = () => {
+          if(navigator.clipboard){ navigator.clipboard.writeText(res.shareCode) }
+          else { prompt('Kopieer de code', res.shareCode) }
+          alert('Code gekopieerd')
+        }
       }
-    }
-    const joinBtn = card.querySelector('[data-join]')
-    if(joinBtn){
-      joinBtn.onclick = () => joinReservation(res, page)
-    }
-    box.appendChild(card)
-  })
+      const joinBtn = card.querySelector('[data-join]')
+      if(joinBtn){
+        joinBtn.onclick = () => joinReservation(res, page)
+      }
+      box.appendChild(card)
+    })
+  } catch(err){
+    console.error('[share] renderReservedList error', err)
+    box.innerHTML = '<div class="muted">Kon gereserveerde boten niet laden.</div>'
+  }
 }
 
 function renderReserveableBoats(page){
   const box = page.querySelector('#share-boats')
   if(!box) return
   box.innerHTML = ''
-  const boats = getBoats()
-  if(!boats.length){ box.innerHTML = '<div class="muted">Geen boten beschikbaar.</div>'; return }
+  try {
+    const boats = getBoats()
+    if(!boats.length){ box.innerHTML = '<div class="muted">Geen boten beschikbaar.</div>'; return }
 
-  boats.forEach(boat => {
-    const card = document.createElement('div')
-    card.className = 'card strong'
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">${boat.name}</div>
-          <div class="muted" style="margin-top:6px">${boat.location || 'Onbekende locatie'}</div>
+    boats.forEach(boat => {
+      const card = document.createElement('div')
+      card.className = 'card strong'
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">${boat.name}</div>
+            <div class="muted" style="margin-top:6px">${boat.location || 'Onbekende locatie'}</div>
+          </div>
+          <button class="small" data-reserve>Reserveer</button>
         </div>
-        <button class="small" data-reserve>Reserveer</button>
-      </div>
-    `
-    card.querySelector('[data-reserve]').onclick = () => {
-      STORE.currentBoatId = boat.id
-      navigate('boat')
-    }
-    box.appendChild(card)
-  })
+      `
+      card.querySelector('[data-reserve]').onclick = () => {
+        STORE.currentBoatId = boat.id
+        navigate('boat')
+      }
+      box.appendChild(card)
+    })
+  } catch(err){
+    console.error('[share] renderReserveableBoats error', err)
+    box.innerHTML = '<div class="muted">Kon beschikbare boten niet laden.</div>'
+  }
 }
 
 export function renderShare(){
-  ensureCodes()
-  const page = document.createElement('div')
-  page.className = 'screen active'
-  const me = STORE.currentUser?.name || 'Gast'
-  page.innerHTML = `
-    <div class="hero fade-card">
-      <div class="row" style="justify-content:space-between; align-items:flex-start">
-        <div>
-          <div class="pill">Crew share</div>
-          <h1>Deel een boot</h1>
-          <p class="muted">${me}, gebruik de deelcode van de eerste reserveerder om punten te delen. Kosten worden automatisch gesplitst.</p>
+  try {
+    console.log('[share] renderShare start', STORE)
+    ensureCodes()
+    const page = document.createElement('div')
+    page.className = 'screen active'
+    const me = STORE.currentUser?.name || 'Gast'
+    page.innerHTML = `
+      <div class="hero fade-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="pill">Crew share</div>
+            <h1>Deel een boot</h1>
+            <p class="muted">${me}, gebruik de deelcode van de eerste reserveerder om punten te delen. Kosten worden automatisch gesplitst.</p>
+          </div>
+          <button class="ghost small" id="back">← Terug</button>
         </div>
-        <button class="ghost small" id="back">← Terug</button>
       </div>
-    </div>
 
-    <div class="layout-split">
+      <div class="layout-split">
+        <div class="card fade-card">
+          <h2>Met code aansluiten</h2>
+          <p class="muted">Voer de 4-cijferige code in die je vriend heeft gedeeld om samen te varen.</p>
+          <input id="share-code" placeholder="Bijv. 1234" />
+          <button id="share-submit">Deelcode gebruiken</button>
+          <div class="msg" style="margin-top:10px">Kosten per persoon: totaal / aantal deelnemers. 2 pers. = 0,5 pt, 4 pers. = 0,25 pt per uur.</div>
+          <div id="share-result" style="margin-top:12px"></div>
+        </div>
+        <div class="card strong">
+          <h2>Mijn deelcodes</h2>
+          <p class="muted">Jij bent de eerste reserveerder van deze slots.</p>
+          <div id="share-my" class="list-stack" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="section-title">🚤 Meld je aan bij bestaande boten</div>
       <div class="card fade-card">
-        <h2>Met code aansluiten</h2>
-        <p class="muted">Voer de 4-cijferige code in die je vriend heeft gedeeld om samen te varen.</p>
-        <input id="share-code" placeholder="Bijv. 1234" />
-        <button id="share-submit">Deelcode gebruiken</button>
-        <div class="msg" style="margin-top:10px">Kosten per persoon: totaal / aantal deelnemers. 2 pers. = 0,5 pt, 4 pers. = 0,25 pt per uur.</div>
-        <div id="share-result" style="margin-top:12px"></div>
+        <p class="muted">Zie welke crews al een boot hebben gereserveerd en schrijf je direct in. Je punten worden automatisch gesplitst.</p>
+        <div id="share-open" class="list-stack" style="margin-top:10px"></div>
       </div>
-      <div class="card strong">
-        <h2>Mijn deelcodes</h2>
-        <p class="muted">Jij bent de eerste reserveerder van deze slots.</p>
-        <div id="share-my" class="list-stack" style="margin-top:10px"></div>
+
+      <div class="section-title">⛵ Overzicht gereserveerde boten</div>
+      <div class="card fade-card">
+        <p class="muted">Alle lopende reserveringen met hun host en verdeling. Hosts zien hun deelcode en kunnen die kopiëren.</p>
+        <div id="share-reserved" class="list-stack" style="margin-top:10px"></div>
       </div>
-    </div>
 
-    <div class="section-title">🚤 Meld je aan bij bestaande boten</div>
-    <div class="card fade-card">
-      <p class="muted">Zie welke crews al een boot hebben gereserveerd en schrijf je direct in. Je punten worden automatisch gesplitst.</p>
-      <div id="share-open" class="list-stack" style="margin-top:10px"></div>
-    </div>
+      <div class="section-title">🛥️ Boten beschikbaar om te reserveren</div>
+      <div class="card fade-card">
+        <p class="muted">Kies een boot, bekijk de stad en start je reservering. Deel de code zodra je de eerste reserveerder bent.</p>
+        <div id="share-boats" class="list-stack" style="margin-top:10px"></div>
+      </div>
+    `
 
-    <div class="section-title">⛵ Overzicht gereserveerde boten</div>
-    <div class="card fade-card">
-      <p class="muted">Alle lopende reserveringen met hun host en verdeling. Hosts zien hun deelcode en kunnen die kopiëren.</p>
-      <div id="share-reserved" class="list-stack" style="margin-top:10px"></div>
-    </div>
+    page.querySelector('#back').onclick = () => navigate('home')
+    page.querySelector('#share-submit').onclick = () => redeem(page)
 
-    <div class="section-title">🛥️ Boten beschikbaar om te reserveren</div>
-    <div class="card fade-card">
-      <p class="muted">Kies een boot, bekijk de stad en start je reservering. Deel de code zodra je de eerste reserveerder bent.</p>
-      <div id="share-boats" class="list-stack" style="margin-top:10px"></div>
-    </div>
-  `
+    if(STORE.sharePrefillCode){
+      const inp = page.querySelector('#share-code')
+      inp.value = STORE.sharePrefillCode
+      STORE.sharePrefillCode = null
+    }
 
-  page.querySelector('#back').onclick = () => navigate('home')
-  page.querySelector('#share-submit').onclick = () => redeem(page)
-
-  if(STORE.sharePrefillCode){
-    const inp = page.querySelector('#share-code')
-    inp.value = STORE.sharePrefillCode
-    STORE.sharePrefillCode = null
+    renderMyCodes(page)
+    renderOpenShares(page)
+    renderReservedList(page)
+    renderReserveableBoats(page)
+    renderNav(page)
+    return page
+  } catch(err){
+    console.error('[share] renderShare error', err)
+    const fallback = document.createElement('div')
+    fallback.className = 'screen active'
+    fallback.innerHTML = `
+      <div style="padding:16px; color:#fff; background:#111">
+        <h1>Er ging iets mis op de deelpagina</h1>
+        <p>Check de console voor meer details (F12 → Console).</p>
+      </div>
+    `
+    return fallback
   }
-
-  renderMyCodes(page)
-  renderOpenShares(page)
-  renderReservedList(page)
-  renderReserveableBoats(page)
-  renderNav(page)
-  return page
 }
