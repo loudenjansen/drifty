@@ -1,6 +1,14 @@
 import { STORE, save, generateShareCode } from '../../state/store.js'
 import { navigate } from '../router.js'
 
+function getBoats(){
+  return Array.isArray(STORE.boats) ? STORE.boats : []
+}
+
+function getBoatById(id){
+  return getBoats().find(b => b.id === id)
+}
+
 function normalizeReservation(res){
   if(!res || typeof res !== 'object') return null
   if(!res.users || !Array.isArray(res.users)) res.users = []
@@ -53,7 +61,7 @@ function renderMyCodes(page){
     .sort((a,b)=> new Date(a.start)-new Date(b.start))
   if(!mine.length){ box.innerHTML = '<div class="muted">Nog geen deelcodes. Maak eerst een reservering.</div>'; return }
   mine.forEach(r=>{
-    const boat = STORE.boats.find(b=>b.id===r.boatId)
+    const boat = getBoatById(r.boatId)
     const per = (r.total/Math.max(1,crew(r).length)).toFixed(3)
     const card = document.createElement('div')
     card.className = 'card strong'
@@ -117,7 +125,7 @@ function renderOpenShares(page){
   if(!list.length){ box.innerHTML = '<div class="muted">Nog geen gedeelde boten beschikbaar.</div>'; return }
 
   list.forEach(r => {
-    const boat = STORE.boats.find(b=>b.id===r.boatId)
+    const boat = getBoatById(r.boatId)
     const per = (r.total/Math.max(1,crew(r).length+1)).toFixed(3)
     const card = document.createElement('div')
     card.className = 'card strong'
@@ -142,7 +150,7 @@ function renderOpenShares(page){
 function showResult(page, res){
   const normalized = normalizeReservation(res)
   if(!normalized) return
-  const boat = STORE.boats.find(b=>b.id===normalized.boatId)
+  const boat = getBoatById(normalized.boatId)
   const crewList = crew(normalized)
   const per = (normalized.total/Math.max(1,crewList.length)).toFixed(3)
   const wrap = page.querySelector('#share-result')
@@ -202,7 +210,7 @@ function renderReservedList(page){
   }
 
   list.forEach(res => {
-    const boat = STORE.boats.find(b=>b.id===res.boatId)
+    const boat = getBoatById(res.boatId)
     const crewList = crew(res)
     const isHost = !!me && res.owner === me
     const per = (res.total/Math.max(1,crewList.length)).toFixed(3)
@@ -242,7 +250,7 @@ function renderReserveableBoats(page){
   const box = page.querySelector('#share-boats')
   if(!box) return
   box.innerHTML = ''
-  const boats = Array.isArray(STORE.boats) ? STORE.boats : []
+  const boats = getBoats()
   if(!boats.length){ box.innerHTML = '<div class="muted">Geen boten beschikbaar.</div>'; return }
 
   boats.forEach(boat => {
