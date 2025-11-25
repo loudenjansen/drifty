@@ -9,6 +9,12 @@ function getBoatById(id){
   return getBoats().find(b => b.id === id)
 }
 
+function ensureChatStore(){
+  if(!STORE.chats || typeof STORE.chats !== 'object' || Array.isArray(STORE.chats)) STORE.chats = { reservations: [], crews: [] }
+  if(!Array.isArray(STORE.chats.reservations)) STORE.chats.reservations = []
+  if(!Array.isArray(STORE.chats.crews)) STORE.chats.crews = []
+}
+
 function normalizeReservation(res){
   try {
     if(!res || typeof res !== 'object') return null
@@ -16,6 +22,7 @@ function normalizeReservation(res){
     if(typeof res.total !== 'number') res.total = Number(res.total || 0)
     if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
     if(!res.owner && res.users.length) res.owner = res.users[0]
+    if(!res.id) res.id = res.shareCode || crypto.randomUUID?.() || `${res.boatId||'res'}-${Date.now()}`
     return res
   } catch(err){
     console.error('[share] normalizeReservation error', err, res)
@@ -31,6 +38,12 @@ function crew(res){
     console.error('[share] crew error', err, res)
     return []
   }
+}
+
+function getCrewId(res){
+  const normalized = normalizeReservation(res)
+  if(!normalized) return null
+  return normalized.shareCode || normalized.id || `${normalized.owner||'crew'}-${normalized.boatId||'boat'}`
 }
 
 function renderNav(container){
@@ -172,6 +185,141 @@ function renderOpenShares(page){
   }
 }
 
+function renderChatSection(page, reservation){
+  try {
+    ensureChatStore()
+    const normalized = normalizeReservation(reservation)
+    if(!normalized) return
+    const chatMount = page.querySelector('#share-chat')
+    if(!chatMount) return
+    const crewId = getCrewId(normalized)
+    const me = STORE.currentUser?.name
+    const members = crew(normalized)
+    const canChat = !!me && members.includes(me)
+    let activeScope = 'res'
+
+    chatMount.innerHTML = `
+      <div class="card strong">
+        <div class="row" style="justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
+          <div>
+            <div class="pill">Crew chat</div>
+            <h3 style="margin:6px 0">Praat met je team</h3>
+            <div class="muted">Chat met je crew per vaart of via de vaste crew-room.</div>
+          </div>
+          <div class="row" style="gap:8px; flex-wrap:wrap">
+            <button class="small" data-scope="res">Chat voor deze vaart</button>
+            <button class="secondary small" data-scope="crew">Crew chat</button>
+          </div>
+        </div>
+        <div id="chat-messages" class="msg" style="margin-top:10px; max-height:240px; overflow:auto; background:rgba(255,255,255,0.04)"></div>
+        <div class="row" style="gap:8px; margin-top:10px; align-items:flex-end">
+          <input id="chat-input" placeholder="Bericht voor je crew" />
+          <button class="small" id="chat-send">Verstuur</button>
+        </div>
+      </div>
+    `
+
+    const listEl = chatMount.querySelector('#chat-messages')
+    const inputEl = chatMount.querySelector('#chat-input')
+    const sendEl = chatMount.querySelector('#chat-send')
+
+    function getMessages(scope){
+      ensureChatStore()
+      if(scope === 'res') return (STORE.chats.reservations||[]).filter(m=>m.reservationId === normalized.id)
+      return (STORE.chats.crews||[]).filter(m=>m.crewId === crewId)
+    }
+
+    function renderMessages(){
+      if(!listEl) return
+      const msgs = (getMessages(activeScope)||[]).slice().sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt))
+      listEl.innerHTML = ''
+      if(!msgs.length){
+        listEl.innerHTML = `<div class="muted">${activeScope==='res' ? 'Nog geen berichten voor deze vaart.' : 'Nog geen berichten in deze crew.'}</div>`
+        return
+      }
+      msgs.forEach(m => {
+        const row = document.createElement('div')
+        row.className = 'msg'
+        row.style.margin = '6px 0'
+        row.innerHTML = `
+          <div class="row" style="justify-content:space-between; gap:8px">
+            <strong>${m.author||'Onbekend'}</strong>
+            <span class="muted" style="font-size:12px">${new Date(m.createdAt||Date.now()).toLocaleString()}</span>
+          </div>
+          <div style="margin-top:4px">${m.message||''}</div>
+        `
+        listEl.appendChild(row)
+      })
+      listEl.scrollTop = listEl.scrollHeight
+    }
+
+    function sendMessage(){
+      try {
+        if(!me || !STORE.currentUser){
+          alert('Log in om te chatten.')
+          return
+        }
+        if(!canChat){
+          alert('Je moet lid zijn van deze crew om te chatten.')
+          return
+        }
+        if(activeScope === 'crew' && !crewId){
+          console.error('[share] crew chat missing crewId', normalized)
+          alert('Geen crew-id beschikbaar voor chatten.')
+          return
+        }
+        const text = (inputEl?.value||'').trim()
+        if(!text) return
+        ensureChatStore()
+        const entry = { author: me, message: text, createdAt: new Date().toISOString() }
+        if(activeScope === 'res'){
+          entry.reservationId = normalized.id
+          STORE.chats.reservations.push(entry)
+        } else {
+          entry.crewId = crewId
+          STORE.chats.crews.push(entry)
+        }
+        save()
+        if(inputEl) inputEl.value = ''
+        renderMessages()
+      } catch(err){
+        console.error('[share] sendMessage error', err)
+      }
+    }
+
+    chatMount.querySelectorAll('[data-scope]').forEach(btn => {
+      btn.onclick = () => {
+        activeScope = btn.dataset.scope === 'crew' ? 'crew' : 'res'
+        chatMount.querySelectorAll('[data-scope]').forEach(b=> b.classList.toggle('secondary', b.dataset.scope!==activeScope))
+        renderMessages()
+      }
+    })
+
+    if(sendEl) sendEl.onclick = () => sendMessage()
+    if(inputEl){
+      if(!STORE.currentUser){
+        inputEl.placeholder = 'Log in om te chatten.'
+        inputEl.disabled = true
+        if(sendEl) sendEl.disabled = true
+      } else if(!canChat){
+        inputEl.placeholder = 'Je moet in de crew zitten om te chatten.'
+        inputEl.disabled = true
+        if(sendEl) sendEl.disabled = true
+      }
+      inputEl.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter'){
+          e.preventDefault()
+          sendMessage()
+        }
+      })
+    }
+
+    renderMessages()
+  } catch(err){
+    console.error('[share] renderChatSection error', err, reservation)
+  }
+}
+
 function showResult(page, res){
   try {
     const normalized = normalizeReservation(res)
@@ -180,6 +328,10 @@ function showResult(page, res){
     const crewList = crew(normalized)
     const per = (normalized.total/Math.max(1,crewList.length)).toFixed(3)
     const wrap = page.querySelector('#share-result')
+    if(!wrap){
+      console.error('[share] showResult missing wrap container')
+      return
+    }
     wrap.innerHTML = `
       <div class="card fade-card">
         <div class="row" style="justify-content:space-between; align-items:flex-start">
@@ -196,11 +348,13 @@ function showResult(page, res){
           <button class="small" id="to-boat">Naar boot</button>
         </div>
       </div>
+      <div id="share-chat" style="margin-top:12px"></div>
     `
     const toBoat = wrap.querySelector('#to-boat')
     if(toBoat){
       toBoat.onclick = () => { STORE.currentBoatId = normalized.boatId; navigate('boat') }
     }
+    renderChatSection(page, normalized)
   } catch(err){
     console.error('[share] showResult error', err, res)
   }
@@ -319,6 +473,7 @@ function renderReserveableBoats(page){
 export function renderShare(){
   try {
     console.log('[share] renderShare start', STORE)
+    ensureChatStore()
     ensureCodes()
     const page = document.createElement('div')
     page.className = 'screen active'

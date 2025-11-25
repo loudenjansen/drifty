@@ -9,7 +9,10 @@ export const STORE = {
   safety: {},
   docs: [],
   incidents: [],
-  chats: [],
+  chats: {
+    reservations: [],
+    crews: [],
+  },
   currentUser: null,
   currentBoatId: null,
   shopItems: [],
@@ -27,6 +30,13 @@ function ensureArrays(){
   if (!Array.isArray(STORE.reservations)) STORE.reservations = []
   if (!Array.isArray(STORE.boats)) STORE.boats = []
   if (!Array.isArray(STORE.crews)) STORE.crews = []
+  ensureChats()
+}
+
+function ensureChats(){
+  if (!STORE.chats || typeof STORE.chats !== 'object' || Array.isArray(STORE.chats)) STORE.chats = { reservations: [], crews: [] }
+  if (!Array.isArray(STORE.chats.reservations)) STORE.chats.reservations = []
+  if (!Array.isArray(STORE.chats.crews)) STORE.chats.crews = []
 }
 
 export function initStore(){
