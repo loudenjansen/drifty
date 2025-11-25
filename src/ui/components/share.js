@@ -1,9 +1,18 @@
 import { STORE, save, generateShareCode } from '../../state/store.js'
 import { navigate } from '../router.js'
 
-function participants(res){
+function normalizeReservation(res){
+  if(!res || typeof res !== 'object') return null
   if(!res.users || !Array.isArray(res.users)) res.users = []
-  return res.users
+  if(typeof res.total !== 'number') res.total = Number(res.total || 0)
+  if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
+  if(!res.owner && res.users.length) res.owner = res.users[0]
+  return res
+}
+
+function crew(res){
+  const norm = normalizeReservation(res)
+  return norm?.users || []
 }
 
 function renderNav(container){
@@ -26,9 +35,8 @@ function renderNav(container){
 function ensureCodes(){
   let changed = false
   (STORE.reservations||[]).forEach(r => {
-    participants(r)
-    if(!r.shareCode || !/^\d{4}$/.test(r.shareCode)){ r.shareCode = generateShareCode(); changed = true }
-    if(!r.owner && r.users?.length){ r.owner = r.users[0]; changed = true }
+    const normalized = normalizeReservation(r)
+    if(normalized !== r) changed = true
   })
   if(changed) save()
 }
@@ -38,13 +46,14 @@ function renderMyCodes(page){
   box.innerHTML = ''
   const me = STORE.currentUser?.name
   const mine = (STORE.reservations||[])
-    .map(participants)
+    .map(normalizeReservation)
+    .filter(Boolean)
     .filter(r=> (r.owner===me))
     .sort((a,b)=> new Date(a.start)-new Date(b.start))
   if(!mine.length){ box.innerHTML = '<div class="muted">Nog geen deelcodes. Maak eerst een reservering.</div>'; return }
   mine.forEach(r=>{
     const boat = STORE.boats.find(b=>b.id===r.boatId)
-    const per = (r.total/Math.max(1,participants(r).length)).toFixed(3)
+    const per = (r.total/Math.max(1,crew(r).length)).toFixed(3)
     const card = document.createElement('div')
     card.className = 'card strong'
     card.innerHTML = `
@@ -71,21 +80,21 @@ function renderMyCodes(page){
 }
 
 function joinReservation(res, page, codeInput){
-  if(!res) return alert('Geen reservering gevonden')
+  const normalized = normalizeReservation(res)
+  if(!normalized) return alert('Geen reservering gevonden')
   const me = STORE.currentUser?.name
   if(!me) return alert('Log in om mee te doen')
-  if(!res.shareCode || !/^\d{4}$/.test(res.shareCode)) res.shareCode = generateShareCode()
-  const crew = participants(res)
+  const crewList = crew(normalized)
   const codeRaw = codeInput ?? prompt('Voer de 4-cijferige code in')
   if(!codeRaw) return alert('Voer de code in om aan te sluiten')
   const code = codeRaw.trim()
-  if(code !== res.shareCode) return alert('Onjuiste code. Vraag de code aan de host.')
-  if(!crew.includes(me)){
-    crew.push(me)
+  if(code !== normalized.shareCode) return alert('Onjuiste code. Vraag de code aan de host.')
+  if(!crewList.includes(me)){
+    crewList.push(me)
     save()
     renderMyCodes(page)
     renderOpenShares(page)
-    showResult(page,res)
+    showResult(page, normalized)
     alert('Je bent toegevoegd. Kosten worden verdeeld!')
   } else {
     alert('Je stond al op deze reservering')
@@ -98,7 +107,8 @@ function renderOpenShares(page){
   box.innerHTML = ''
   const me = STORE.currentUser?.name
   const list = (STORE.reservations||[])
-    .map(participants)
+    .map(normalizeReservation)
+    .filter(Boolean)
     .filter(r => (r.users?.length)
       && (!me || !r.users.includes(me)))
     .sort((a,b)=> new Date(a.start)-new Date(b.start))
@@ -107,7 +117,7 @@ function renderOpenShares(page){
 
   list.forEach(r => {
     const boat = STORE.boats.find(b=>b.id===r.boatId)
-    const per = (r.total/Math.max(1,participants(r).length+1)).toFixed(3)
+    const per = (r.total/Math.max(1,crew(r).length+1)).toFixed(3)
     const card = document.createElement('div')
     card.className = 'card strong'
     card.innerHTML = `
@@ -129,9 +139,11 @@ function renderOpenShares(page){
 }
 
 function showResult(page, res){
-  const boat = STORE.boats.find(b=>b.id===res.boatId)
-  const crew = participants(res)
-  const per = (res.total/Math.max(1,crew.length)).toFixed(3)
+  const normalized = normalizeReservation(res)
+  if(!normalized) return
+  const boat = STORE.boats.find(b=>b.id===normalized.boatId)
+  const crewList = crew(normalized)
+  const per = (normalized.total/Math.max(1,crewList.length)).toFixed(3)
   const wrap = page.querySelector('#share-result')
   wrap.innerHTML = `
     <div class="card fade-card">
@@ -139,18 +151,18 @@ function showResult(page, res){
         <div>
           <div class="pill">${boat?.name||'Boot'}</div>
           <h2 style="margin:6px 0">Slot gedeeld</h2>
-          <div class="muted">${new Date(res.start).toLocaleString()} → ${new Date(res.end).toLocaleString()}</div>
+          <div class="muted">${new Date(normalized.start).toLocaleString()} → ${new Date(normalized.end).toLocaleString()}</div>
         </div>
-        <span class="pill green">Crew: ${crew.length}</span>
+        <span class="pill green">Crew: ${crewList.length}</span>
       </div>
-      <div class="msg" style="margin-top:10px">Kosten worden gesplitst: ${res.total.toFixed(3)} pt / ${crew.length} = ${per} pt per persoon.</div>
+      <div class="msg" style="margin-top:10px">Kosten worden gesplitst: ${normalized.total.toFixed(3)} pt / ${crewList.length} = ${per} pt per persoon.</div>
       <div class="row" style="gap:8px; margin-top:8px; flex-wrap:wrap">
-        <span class="pill ghost">Deelcode: ${res.shareCode}</span>
+        <span class="pill ghost">Deelcode: ${normalized.shareCode}</span>
         <button class="small" id="to-boat">Naar boot</button>
       </div>
     </div>
   `
-  wrap.querySelector('#to-boat').onclick = () => { STORE.currentBoatId = res.boatId; navigate('boat') }
+  wrap.querySelector('#to-boat').onclick = () => { STORE.currentBoatId = normalized.boatId; navigate('boat') }
 }
 
 function redeem(page){
@@ -159,17 +171,18 @@ function redeem(page){
   if(!code) return alert('Voer een code in')
   if(!STORE.currentUser) return alert('Log eerst in om een code te gebruiken')
   const res = (STORE.reservations||[]).find(r=> (r.shareCode||'') === code)
-  if(!res) return alert('Onbekende code')
-  if(!res.shareCode) res.shareCode = code
+  const normalized = normalizeReservation(res)
+  if(!normalized) return alert('Onbekende code')
+  if(!normalized.shareCode) normalized.shareCode = code
   const me = STORE.currentUser?.name
-  const crew = participants(res)
-  if(me && !crew.includes(me)) crew.push(me)
+  const crewList = crew(normalized)
+  if(me && !crewList.includes(me)) crewList.push(me)
   save()
   input.value = ''
   STORE.sharePrefillCode = null
   renderMyCodes(page)
   renderOpenShares(page)
-  showResult(page, res)
+  showResult(page, normalized)
   alert('Je bent toegevoegd aan de reservering. Kosten worden gesplitst!')
 }
 
@@ -178,7 +191,8 @@ function renderReservedList(page){
   box.innerHTML = ''
   const me = STORE.currentUser?.name
   const list = (STORE.reservations||[])
-    .map(participants)
+    .map(normalizeReservation)
+    .filter(Boolean)
     .sort((a,b)=> new Date(a.start)-new Date(b.start))
 
   if(!list.length){
@@ -188,9 +202,9 @@ function renderReservedList(page){
 
   list.forEach(res => {
     const boat = STORE.boats.find(b=>b.id===res.boatId)
-    const crew = participants(res)
+    const crewList = crew(res)
     const isHost = !!me && res.owner === me
-    const per = (res.total/Math.max(1,crew.length)).toFixed(3)
+    const per = (res.total/Math.max(1,crewList.length)).toFixed(3)
     const card = document.createElement('div')
     card.className = 'card strong'
     card.innerHTML = `
@@ -198,7 +212,7 @@ function renderReservedList(page){
         <div>
           <div class="pill">${boat?.name||'Boot'}</div>
           <div style="font-weight:700; margin-top:6px">${new Date(res.start).toLocaleString()}</div>
-          <div class="muted">Crew: ${crew.join(', ')||'—'} • ~${per} pt p.p.</div>
+          <div class="muted">Crew: ${crewList.join(', ')||'—'} • ~${per} pt p.p.</div>
           ${res.owner ? `<div class="muted" style="margin-top:4px">Host: ${res.owner}</div>` : ''}
         </div>
         <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
