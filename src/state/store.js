@@ -1,3 +1,4 @@
+import { supabase as supabaseClient } from '../lib/supabaseClient.js'
 import { storage } from './storage.js'
 
 export const STORE = {
@@ -24,6 +25,29 @@ export const STORE = {
 export function generateShareCode(){
   // Random 4-digit numeric code for sharing reservations
   return String(Math.floor(1000 + Math.random() * 9000))
+}
+
+function fallbackGridPosition(index){
+  const startX = 80
+  const startY = 60
+  const spacingX = 140
+  const spacingY = 90
+  const perRow = 4
+  const col = index % perRow
+  const row = Math.floor(index / perRow)
+  return { x: startX + col * spacingX, y: startY + row * spacingY }
+}
+
+function getSupabaseClient(){
+  return supabaseClient || (typeof window !== 'undefined' ? window.supabaseClient : null)
+}
+
+function pickNumber(...values){
+  for (const value of values){
+    const num = Number(value)
+    if (Number.isFinite(num)) return num
+  }
+  return null
 }
 
 function ensureArrays(){
@@ -126,7 +150,7 @@ export function loadFromStorage(){
 
 export async function loadBoatsFromSupabase(){
   ensureArrays()
-  const client = window?.supabaseClient
+  const client = getSupabaseClient()
   if (!client){
     console.error('[supabase] loadBoats error: supabase client missing')
     STORE.boats = Array.isArray(STORE.boats) ? STORE.boats : []
@@ -136,17 +160,24 @@ export async function loadBoatsFromSupabase(){
     const { data, error } = await client
       .from('boats')
       .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
     if (error) throw error
     STORE.boats = Array.isArray(data)
-      ? data.map(b => ({
-          id: b.id,
-          name: b.name || 'Boot',
-          location: b.location || b.city || 'Onbekende locatie',
-          city: b.city || b.location || '',
-          status: b.is_active ? 'available' : 'inactive',
-        }))
+      ? data.map((b, idx) => {
+          const fallback = fallbackGridPosition(idx)
+          const x = pickNumber(b?.x, b?.pos_x, b?.posX) ?? fallback.x
+          const y = pickNumber(b?.y, b?.pos_y, b?.posY) ?? fallback.y
+          const status = b?.status || (b?.is_active === false ? 'inactive' : 'available')
+          const location = b?.location || b?.city || ''
+          return {
+            id: b?.id ?? idx,
+            name: b?.name || `Boot ${idx + 1}`,
+            status,
+            x,
+            y,
+            location,
+          }
+        })
       : []
   } catch(err){
     console.error('[supabase] loadBoats error', err)
@@ -156,9 +187,16 @@ export async function loadBoatsFromSupabase(){
   return STORE.boats
 }
 
+export function debugAttach(){
+  if (typeof window !== 'undefined') {
+    window.driftyStore = STORE
+    window.driftyLoadBoats = loadBoatsFromSupabase
+  }
+}
+
 export async function loadReservationsFromSupabase(currentUserId){
   ensureArrays()
-  const client = window?.supabaseClient
+  const client = getSupabaseClient()
   if (!currentUserId || !client){
     if (!client) console.error('[supabase] loadReservations error: supabase client missing')
     STORE.reservations = Array.isArray(STORE.reservations) ? STORE.reservations : []
@@ -193,7 +231,7 @@ export async function loadReservationsFromSupabase(currentUserId){
 
 export async function createReservation({ userId, boatId, startTime, endTime }){
   ensureArrays()
-  const client = window?.supabaseClient
+  const client = getSupabaseClient()
   if (!client){
     console.error('[supabase] createReservation error: supabase client missing')
     return null
