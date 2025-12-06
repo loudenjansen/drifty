@@ -23,6 +23,7 @@ export function renderHome(){
   page.className = 'screen active'
   const username = STORE.currentUser?.name || 'Gast'
   const isAdmin = !!STORE.currentUser?.isAdmin
+  const boats = Array.isArray(STORE.boats) ? STORE.boats : []
   page.innerHTML = `
     <div class="hero fade-card">
       <div class="row" style="justify-content:space-between; align-items:flex-start">
@@ -45,7 +46,7 @@ export function renderHome(){
       <div class="stat-grid">
         <div class="stat">
           <div class="label">Beschikbare boten</div>
-          <div class="value">${STORE.boats.filter(b=>b.status==='available').length}/${STORE.boats.length}</div>
+          <div class="value">${boats.filter(b=>b.status==='available').length}/${boats.length}</div>
           <div class="muted">Direct klaar voor vertrek.</div>
         </div>
         <div class="stat">
@@ -99,7 +100,7 @@ export function renderHome(){
           </div>
           <div class="stat">
             <div class="label">Vloot</div>
-            <div class="value">${STORE.boats.length} boten</div>
+            <div class="value">${boats.length} boten</div>
             <div class="muted">Beschikbaar in DRIFTY hub.</div>
           </div>
         </div>
@@ -127,7 +128,7 @@ export function renderHome(){
   if (adminQuickBtn) adminQuickBtn.onclick = () => navigate('admin')
 
   const map = page.querySelector('#map')
-  STORE.boats.forEach(b=>{
+  boats.forEach(b=>{
     const el = document.createElement('div')
     el.className = 'boat ' + (b.status==='available'?'ok':'busy')
     el.style.left = b.x+'px'
@@ -139,7 +140,7 @@ export function renderHome(){
   })
 
   const list = page.querySelector('#boats-list')
-  STORE.boats.forEach(b=>{
+  boats.forEach(b=>{
     const c = document.createElement('div')
     c.className = 'card strong'
     c.innerHTML = `
